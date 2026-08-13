@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Grid background -->
+  <path d="M20 100 H180 M100 20 V180" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4"/>
+  <circle cx="100" cy="100" r="80" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2 4"/>
+  
+  <!-- Outer glowing rings -->
+  <circle cx="100" cy="100" r="60" stroke="#3B82F6" stroke-width="1.5" opacity="0.3" stroke-dasharray="6 6"/>
+  <circle cx="100" cy="100" r="45" stroke="#6366F1" stroke-width="1" opacity="0.2"/>
+
+  <!-- Isometric Database Icon -->
+  <g transform="translate(70, 60)">
+    <!-- Base Layer -->
+    <path d="M10 50 C10 42 50 42 50 50 C50 58 10 58 10 50 Z" fill="#E2E8F0"/>
+    <path d="M10 50 V65 C10 73 50 73 50 65 V50" fill="none" stroke="#94A3B8" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M10 65 C10 73 50 73 50 65" fill="#CBD5E1"/>
+
+    <!-- Middle Layer -->
+    <path d="M10 25 C10 17 50 17 50 25 C50 33 10 33 10 25 Z" fill="#F1F5F9"/>
+    <path d="M10 25 V40 C10 48 50 48 50 40 V25" fill="none" stroke="#6366F1" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M10 40 C10 48 50 48 50 40" fill="#E2E8F0"/>
+
+    <!-- Top Layer -->
+    <path d="M10 0 C10 -8 50 -8 50 0 C50 8 10 8 10 0 Z" fill="#FFFFFF"/>
+    <path d="M10 0 V15 C10 23 50 23 50 15 V0" fill="none" stroke="#2563EB" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M10 15 C10 23 50 23 50 15" fill="#3B82F6" opacity="0.1"/>
+
+    <!-- Glowing Sync Node -->
+    <circle cx="30" cy="-5" r="4" fill="#10B981"/>
+    <circle cx="30" cy="-5" r="8" stroke="#10B981" stroke-width="1.5" opacity="0.5">
+      <animate attributeName="r" values="4;12;4" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>

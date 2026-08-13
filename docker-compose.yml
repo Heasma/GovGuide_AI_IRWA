@@ -1,0 +1,94 @@
+# ============================================================
+# GovGuide AI — Docker Compose (Development)
+# ============================================================
+# This compose file starts:
+#   - PostgreSQL with pgvector extension (for future vector search)
+#   - FastAPI backend
+#   - React/Vite frontend (dev mode)
+#
+# Usage:
+#   docker-compose up -d postgres     ← start DB only (for local dev)
+#   docker-compose up                 ← start everything
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ──────────────────────────────────────────────────────────
+  # PostgreSQL + pgvector
+  # Using pgvector/pgvector image so the extension is pre-installed.
+  # Embedding dimension NOT configured here — added via migration
+  # once the embedding model is confirmed.
+  # ──────────────────────────────────────────────────────────
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: govguide_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: govguide
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: govguide_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U govguide -d govguide_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────────────────
+  # FastAPI Backend
+  # ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: govguide_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://govguide:changeme@postgres:5432/govguide_db
+      DATABASE_SYNC_URL: postgresql://govguide:changeme@postgres:5432/govguide_db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./agents:/agents
+      - ./orchestrator:/orchestrator
+      - ./nlp:/nlp
+      - ./retrieval:/retrieval
+      - ./llm:/llm
+      - ./security:/security
+      - ./database:/database
+      - ./responsible_ai:/responsible_ai
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ──────────────────────────────────────────────────────────
+  # React Frontend (Vite Dev Server)
+  # ──────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: govguide_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
