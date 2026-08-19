@@ -61,6 +61,13 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = ""
     EMBEDDING_DIMENSION: int = 0  # 0 = not yet configured
 
+    @field_validator("EMBEDDING_DIMENSION", mode="before")
+    @classmethod
+    def parse_embedding_dimension(cls, v):
+        if v is None or v == "":
+            return 0
+        return int(v)
+
     # ── Retrieval ─────────────────────────────────────────────
     RETRIEVAL_MODE: str = "hybrid"
     RETRIEVAL_TOP_K: int = 10

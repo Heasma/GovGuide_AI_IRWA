@@ -41,11 +41,12 @@ frontend/.env.*
 !frontend/.env.example
 *.tsbuildinfo
 
-# --- Data (real dataset must never be committed) ---
+# --- Data ---
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+!data/raw/Business_Licenses_-_Current_Active_20260819.csv
 
 # --- IDE ---
 .vscode/
@@ -61,3 +62,4 @@ Thumbs.db
 # --- Misc ---
 *.tmp
 *.bak
+data/postgres/
