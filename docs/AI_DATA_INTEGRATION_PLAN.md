@@ -359,26 +359,32 @@ Instructions:
 
 ---
 
-## 17. Dataset Arrival Checklist (Saturday)
+## 17. Dataset Arrival Checklist — COMPLETED 2026-08-19
 
-Upon receiving the dataset, the integration steps must be executed in this exact order:
+Dataset received and profiled. All checklist items completed.
 
-- [ ] **Step 1: Check File Format**: Identify formats (.csv, .json, .xml).
-- [ ] **Step 2: Read Attributes**: Document all columns and fields.
-- [ ] **Step 3: Analyze Records Count**: Run record counts.
-- [ ] **Step 4: Check Missing Data**: Identify columns containing nulls/blanks.
-- [ ] **Step 5: Check Duplicates**: Detect identical rows or duplicate identifiers.
-- [ ] **Step 6: Map to Target Model Schema**: Match dataset attributes to the target database columns.
-- [ ] **Step 7: Confirm Key Fields**: Identify procedures, eligibility, timelines, fees, and official links.
+- [x] **Step 1: Check File Format**: CSV, UTF-8-SIG encoding, comma delimiter.
+- [x] **Step 2: Read Attributes**: 37 columns confirmed. See `data/validation/dataset_profile.json`.
+- [x] **Step 3: Analyze Records Count**: **53,091 rows** confirmed.
+- [x] **Step 4: Check Missing Data**: Key findings — `LICENSE STATUS CHANGE DATE` is 100% NULL; `APPLICATION CREATED DATE` is 78.9% NULL; `SSA` is 73.6% NULL. See `data/validation/missing_values.csv`.
+- [x] **Step 5: Check Duplicates**: 0 complete duplicate rows. 871 LICENSE NUMBERs appear on multiple records (renewal cycles expected). 7,477 ACCOUNT NUMBERs appear on multiple records (one business, multiple licenses — expected). See `data/validation/duplicate_summary.csv`.
+- [x] **Step 6: Map to Target Model Schema**: Full mapping proposal in `data/validation/dataset_model_mapping.md`. Key semantic mismatch: dataset describes licensed businesses, not government offices.
+- [x] **Step 7: Confirm Key Fields**: Procedures, eligibility, fees, official URLs, and contact info are **NOT present** in the dataset. Supplementary BACP data required. See `data/validation/missing_project_attributes.md` and `data/validation/gs_office_additional_data_requirements.md`.
 
 ---
 
 ## 18. Risks & Mitigations
 
-- **Risk: Missing URLs or Reference Data**: The dataset might lack official documentation URLs.
-  - *Mitigation*: Fallback to the main department portal website URL retrieved from `government_offices` table.
-- **Risk: Poor Document Structure**: Unstructured documents might yield low retrieval accuracy.
-  - *Mitigation*: Dynamically adjust chunk overlap size and leverage section headers in parent metadata tags.
+- **Risk: Missing URLs or Reference Data**: The dataset lacks official documentation URLs entirely.
+  - *Mitigation*: Collect BACP official URLs per license type (56 types) as OfficialSource records.
+- **Risk: Dataset Describes Businesses, Not Government Services**: The primary entity is a licensed business, not a service.
+  - *Mitigation*: Use LICENSE CODE + LICENSE DESCRIPTION as the GovernmentService entity; use BACP supplementary data for procedural content.
+- **Risk: APPLICATION CREATED DATE 78.9% Missing**: Processing time cannot be reliably computed from dataset alone.
+  - *Mitigation*: Collect official BACP processing time estimates from BACP website per license type.
+- **Risk: Poor Document Structure**: BUSINESS ACTIVITY field contains pipe-delimited multi-value text.
+  - *Mitigation*: Split on " | " delimiter during transformation; index each activity separately.
+- **Risk: LICENSE STATUS CHANGE DATE 100% NULL**: Status change tracking unavailable.
+  - *Mitigation*: Omit this field from ingestion; rely on LICENSE STATUS (currently all "AAI") and temporal fields.
 - **Risk: Vector Store Latency**: Vector similarity search might slow down under large datasets.
   - *Mitigation*: Enable HNSW index structure with optimized index parameters.
 
@@ -387,10 +393,34 @@ Upon receiving the dataset, the integration steps must be executed in this exact
 ## 19. Implementation Order
 
 When integration begins, build the systems in this order:
-1. **Validation Engine**: Write data ingestion validator schemas.
-2. **Ingestion Pipelines**: Implement loaders to insert data into PostgreSQL tables.
-3. **Chunking Pipeline**: Set up splitters to populate document chunks.
-4. **pgvector Indexing**: Configure the HNSW index structure on the database.
-5. **Hybrid Search Service**: Implement reciprocal rank fusion logic in `retrieval_engine.py`.
-6. **Agent Wiring**: Integrate hybrid search pipeline into `ResearchAgent`.
-7. **RAG Integration**: Integrate context-grounded system prompts in `AdvisoryAgent`.
+1. **Supplementary Data Collection**: Collect BACP procedural data (fees, eligibility, procedures, URLs) for all 56 license types.
+2. **Validation Engine**: Write data ingestion validator schemas (Pydantic) for both CSV and supplementary data.
+3. **Ingestion Pipelines**: Implement loaders to insert data into PostgreSQL tables.
+4. **Chunking Pipeline**: Set up splitters to populate document chunks from BUSINESS ACTIVITY + supplementary BACP text.
+5. **pgvector Indexing**: Configure the HNSW index structure on the database.
+6. **Hybrid Search Service**: Implement reciprocal rank fusion logic in `retrieval_engine.py`.
+7. **Agent Wiring**: Integrate hybrid search pipeline into `ResearchAgent`.
+8. **RAG Integration**: Integrate context-grounded system prompts in `AdvisoryAgent`.
+
+---
+
+## 20. Phase 1 Profiling — Confirmed Dataset Facts (2026-08-19)
+
+| Property | Value |
+|----------|-------|
+| Dataset file | `Business_Licenses_-_Current_Active_20260819.csv` |
+| Rows | 53,091 |
+| Columns | 37 |
+| Encoding | UTF-8-SIG |
+| Delimiter | Comma `,` |
+| SHA-256 | `d3246a6657fe8cbb46a12a5fc6027569d2ca783ab4b7040449eac4dfaa564a41` |
+| Complete duplicate rows | 0 |
+| LICENSE STATUS unique values | 1 (AAI only — all records are active) |
+| License types (LICENSE DESCRIPTION) | 56 unique types |
+| Unique business accounts | 36,262 |
+| Date columns | 9 (8 parseable; LICENSE STATUS CHANGE DATE = 100% NULL) |
+| Location columns | 15 |
+| Lat/Lon coverage | ~92% of records geocoded |
+| Geography | Chicago, IL (CITY: 951 unique values; STATE: 48 unique values) |
+| Profiling script | `data/profiling/profile_dataset.py` |
+| Profiling outputs | `data/validation/` (6 files) |

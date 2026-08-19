@@ -1,0 +1,1228 @@
+{
+  "profiling_metadata": {
+    "generated_at": "2026-08-19T21:47:44.553087",
+    "script": "data/profiling/profile_dataset.py",
+    "dataset_file": "Business_Licenses_-_Current_Active_20260819.csv",
+    "dataset_sha256": "d3246a6657fe8cbb46a12a5fc6027569d2ca783ab4b7040449eac4dfaa564a41",
+    "encoding": "utf-8-sig",
+    "delimiter": ","
+  },
+  "shape": {
+    "rows": 53091,
+    "columns": 37
+  },
+  "columns": [
+    "ID",
+    "LICENSE ID",
+    "ACCOUNT NUMBER",
+    "SITE NUMBER",
+    "LEGAL NAME",
+    "DOING BUSINESS AS NAME",
+    "ADDRESS",
+    "CITY",
+    "STATE",
+    "ZIP CODE",
+    "WARD",
+    "PRECINCT",
+    "WARD PRECINCT",
+    "POLICE DISTRICT",
+    "COMMUNITY AREA",
+    "COMMUNITY AREA NAME",
+    "NEIGHBORHOOD",
+    "LICENSE CODE",
+    "LICENSE DESCRIPTION",
+    "BUSINESS ACTIVITY ID",
+    "BUSINESS ACTIVITY",
+    "LICENSE NUMBER",
+    "APPLICATION TYPE",
+    "APPLICATION CREATED DATE",
+    "APPLICATION REQUIREMENTS COMPLETE",
+    "PAYMENT DATE",
+    "CONDITIONAL APPROVAL",
+    "LICENSE TERM START DATE",
+    "LICENSE TERM EXPIRATION DATE",
+    "LICENSE APPROVED FOR ISSUANCE",
+    "DATE ISSUED",
+    "LICENSE STATUS",
+    "LICENSE STATUS CHANGE DATE",
+    "SSA",
+    "LATITUDE",
+    "LONGITUDE",
+    "LOCATION"
+  ],
+  "column_profiles": [
+    {
+      "column": "ID",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 53090,
+      "sample_values": [
+        "2948166-20280716",
+        "2818291-20261116",
+        "40561-20261016",
+        "2214856-20261016",
+        "2349392-20261016"
+      ]
+    },
+    {
+      "column": "LICENSE ID",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 53091,
+      "sample_values": [
+        "3095906",
+        "3082190",
+        "3096968",
+        "3097386",
+        "3098169"
+      ]
+    },
+    {
+      "column": "ACCOUNT NUMBER",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 36262,
+      "sample_values": [
+        "487329",
+        "432056",
+        "34237",
+        "287744",
+        "392378"
+      ]
+    },
+    {
+      "column": "SITE NUMBER",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 467,
+      "sample_values": [
+        "2",
+        "1",
+        "5",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "column": "LEGAL NAME",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 36161,
+      "sample_values": [
+        "CHICAGO BH HOSPITAL, LLC",
+        "ALTRUISTIC ESTHETICS INC.",
+        "THE ARMADILLO'S PILLOW INC",
+        "A & R AUTO REBUILDERS, INC",
+        "LEO DESIGNS, LTD."
+      ]
+    },
+    {
+      "column": "DOING BUSINESS AS NAME",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53001,
+      "missing_count": 90,
+      "missing_pct": 0.17,
+      "unique_count": 38708,
+      "sample_values": [
+        "Montrose Behavioral Health Hospital",
+        "ALTRUISTIC ESTHETICS",
+        "THE ARMADILLO'S PILLOW INC",
+        "A & R AUTO REBUILDERS, INC",
+        "LEO DESIGNS, LTD."
+      ]
+    },
+    {
+      "column": "ADDRESS",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 40127,
+      "sample_values": [
+        "4840 N MARINE DR 5 FLOORS",
+        "4809 N RAVENSWOOD AVE  116",
+        "6753 N SHERIDAN RD 1ST",
+        "1110 E 95TH ST",
+        "4011 N RAVENSWOOD AVE 1ST 103"
+      ]
+    },
+    {
+      "column": "CITY",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 951,
+      "sample_values": [
+        "CHICAGO",
+        "LA GRANGE",
+        "WHEATON",
+        "ST. CHARLES",
+        "WARRENVILLE"
+      ]
+    },
+    {
+      "column": "STATE",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 48,
+      "sample_values": [
+        "IL",
+        "TN",
+        "MN",
+        "IN",
+        "NY"
+      ]
+    },
+    {
+      "column": "ZIP CODE",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 53075,
+      "missing_count": 16,
+      "missing_pct": 0.03,
+      "unique_count": 1186,
+      "sample_values": [
+        "60640",
+        "60626",
+        "60619",
+        "60613",
+        "60604"
+      ]
+    },
+    {
+      "column": "WARD",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 49007,
+      "missing_count": 4084,
+      "missing_pct": 7.69,
+      "unique_count": 50,
+      "sample_values": [
+        "46",
+        "47",
+        "49",
+        "8",
+        "4"
+      ]
+    },
+    {
+      "column": "PRECINCT",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48804,
+      "missing_count": 4287,
+      "missing_pct": 8.07,
+      "unique_count": 76,
+      "sample_values": [
+        "40",
+        "32",
+        "7",
+        "59",
+        "25"
+      ]
+    },
+    {
+      "column": "WARD PRECINCT",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 49155,
+      "missing_count": 3936,
+      "missing_pct": 7.41,
+      "unique_count": 2513,
+      "sample_values": [
+        "46-40",
+        "47-32",
+        "49-7",
+        "8-59",
+        "47-25"
+      ]
+    },
+    {
+      "column": "POLICE DISTRICT",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 49054,
+      "missing_count": 4037,
+      "missing_pct": 7.6,
+      "unique_count": 25,
+      "sample_values": [
+        "20",
+        "24",
+        "4",
+        "19",
+        "1"
+      ]
+    },
+    {
+      "column": "COMMUNITY AREA",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48920,
+      "missing_count": 4171,
+      "missing_pct": 7.86,
+      "unique_count": 78,
+      "sample_values": [
+        "3",
+        "1",
+        "47",
+        "6",
+        "32"
+      ]
+    },
+    {
+      "column": "COMMUNITY AREA NAME",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48915,
+      "missing_count": 4176,
+      "missing_pct": 7.87,
+      "unique_count": 77,
+      "sample_values": [
+        "UPTOWN",
+        "ROGERS PARK",
+        "BURNSIDE",
+        "LAKE VIEW",
+        "LOOP"
+      ]
+    },
+    {
+      "column": "NEIGHBORHOOD",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48886,
+      "missing_count": 4205,
+      "missing_pct": 7.92,
+      "unique_count": 98,
+      "sample_values": [
+        "UPTOWN",
+        "ROGERS PARK",
+        "BURNSIDE",
+        "LAKE VIEW",
+        "LOOP"
+      ]
+    },
+    {
+      "column": "LICENSE CODE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 56,
+      "sample_values": [
+        "4404",
+        "1010",
+        "8340",
+        "1625",
+        "1781"
+      ]
+    },
+    {
+      "column": "LICENSE DESCRIPTION",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 56,
+      "sample_values": [
+        "Regulated Business License",
+        "Limited Business License",
+        "Motor Vehicle Services License",
+        "Raffles",
+        "Tobacco"
+      ]
+    },
+    {
+      "column": "BUSINESS ACTIVITY ID",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 50009,
+      "missing_count": 3082,
+      "missing_pct": 5.81,
+      "unique_count": 2463,
+      "sample_values": [
+        "232",
+        "767 | 896 | 956",
+        "711",
+        "602",
+        "720"
+      ]
+    },
+    {
+      "column": "BUSINESS ACTIVITY",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 50009,
+      "missing_count": 3082,
+      "missing_pct": 5.81,
+      "unique_count": 2463,
+      "sample_values": [
+        "Operation of General Medical / Surgical Hospital",
+        "Retail Sales of General Merchandise and Non-Perishable Food | Skincare Services | Provide Waxing Services",
+        "Motor Vehicle Repair - Engine and Body Work",
+        "Operation of an Administrative Commercial Office",
+        "Not-For-Profit Selling Raffles for Prizes of $50 or More"
+      ]
+    },
+    {
+      "column": "LICENSE NUMBER",
+      "pandas_dtype": "str",
+      "semantic_type": "text",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 52220,
+      "sample_values": [
+        "2948166",
+        "2818291",
+        "40561",
+        "2214856",
+        "2349392"
+      ]
+    },
+    {
+      "column": "APPLICATION TYPE",
+      "pandas_dtype": "str",
+      "semantic_type": "categorical",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 6,
+      "sample_values": [
+        "RENEW",
+        "ISSUE",
+        "C_LOC",
+        "C_SBA",
+        "C_CAPA"
+      ]
+    },
+    {
+      "column": "APPLICATION CREATED DATE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 11201,
+      "missing_count": 41890,
+      "missing_pct": 78.9,
+      "unique_count": 694,
+      "sample_values": [
+        "03/20/2025",
+        "08/03/2026",
+        "07/28/2026",
+        "04/20/2026",
+        "08/17/2026"
+      ]
+    },
+    {
+      "column": "APPLICATION REQUIREMENTS COMPLETE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 53052,
+      "missing_count": 39,
+      "missing_pct": 0.07,
+      "unique_count": 661,
+      "sample_values": [
+        "07/28/2026",
+        "04/15/2026",
+        "08/15/2026",
+        "08/11/2026",
+        "07/15/2026"
+      ]
+    },
+    {
+      "column": "PAYMENT DATE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 52953,
+      "missing_count": 138,
+      "missing_pct": 0.26,
+      "unique_count": 874,
+      "sample_values": [
+        "07/29/2026",
+        "04/15/2026",
+        "08/17/2026",
+        "08/18/2026",
+        "08/15/2026"
+      ]
+    },
+    {
+      "column": "CONDITIONAL APPROVAL",
+      "pandas_dtype": "str",
+      "semantic_type": "categorical",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 2,
+      "sample_values": [
+        "N",
+        "Y"
+      ]
+    },
+    {
+      "column": "LICENSE TERM START DATE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 53088,
+      "missing_count": 3,
+      "missing_pct": 0.01,
+      "unique_count": 537,
+      "sample_values": [
+        "07/16/2028",
+        "11/16/2026",
+        "10/16/2026",
+        "09/16/2026",
+        "09/01/2026"
+      ]
+    },
+    {
+      "column": "LICENSE TERM EXPIRATION DATE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 156,
+      "sample_values": [
+        "07/15/2030",
+        "11/15/2028",
+        "10/15/2028",
+        "10/15/2027",
+        "05/15/2028"
+      ]
+    },
+    {
+      "column": "LICENSE APPROVED FOR ISSUANCE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 50796,
+      "missing_count": 2295,
+      "missing_pct": 4.32,
+      "unique_count": 764,
+      "sample_values": [
+        "07/29/2026",
+        "04/15/2026",
+        "08/17/2026",
+        "08/18/2026",
+        "08/15/2026"
+      ]
+    },
+    {
+      "column": "DATE ISSUED",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 569,
+      "sample_values": [
+        "07/30/2026",
+        "04/16/2026",
+        "08/18/2026",
+        "08/17/2026",
+        "08/15/2026"
+      ]
+    },
+    {
+      "column": "LICENSE STATUS",
+      "pandas_dtype": "str",
+      "semantic_type": "categorical",
+      "total_records": 53091,
+      "non_null": 53091,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 1,
+      "sample_values": [
+        "AAI"
+      ]
+    },
+    {
+      "column": "LICENSE STATUS CHANGE DATE",
+      "pandas_dtype": "str",
+      "semantic_type": "date",
+      "total_records": 53091,
+      "non_null": 0,
+      "missing_count": 53091,
+      "missing_pct": 100.0,
+      "unique_count": 0,
+      "sample_values": []
+    },
+    {
+      "column": "SSA",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 14023,
+      "missing_count": 39068,
+      "missing_pct": 73.59,
+      "unique_count": 53,
+      "sample_values": [
+        "34",
+        "31",
+        "54",
+        "51",
+        "23"
+      ]
+    },
+    {
+      "column": "LATITUDE",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48853,
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "41.970352506",
+        "41.9691903575",
+        "42.0050836914",
+        "41.7222764594",
+        "41.954603016"
+      ]
+    },
+    {
+      "column": "LONGITUDE",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48853,
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "-87.6501347448",
+        "-87.6740389209",
+        "-87.6607268964",
+        "-87.5967691735",
+        "-87.6736521914"
+      ]
+    },
+    {
+      "column": "LOCATION",
+      "pandas_dtype": "str",
+      "semantic_type": "location",
+      "total_records": 53091,
+      "non_null": 48853,
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "POINT (-87.65013474477234 41.97035250602275)",
+        "POINT (-87.67403892092791 41.969190357544846)",
+        "POINT (-87.66072689641621 42.00508369143515)",
+        "POINT (-87.59676917353497 41.72227645939994)",
+        "POINT (-87.6736521913905 41.95460301600229)"
+      ]
+    }
+  ],
+  "duplicate_analysis": {
+    "complete_duplicate_rows": 0,
+    "ID": {
+      "duplicate_values": 1,
+      "extra_rows": 1
+    },
+    "LICENSE ID": {
+      "duplicate_values": 0,
+      "extra_rows": 0
+    },
+    "LICENSE NUMBER": {
+      "duplicate_values": 871,
+      "extra_rows": 871
+    },
+    "ACCOUNT NUMBER": {
+      "duplicate_values": 7477,
+      "extra_rows": 16829
+    }
+  },
+  "date_field_analysis": {
+    "LICENSE CODE": {
+      "total": 53091,
+      "non_null_original": 53091,
+      "successfully_parsed": 53091,
+      "parse_rate_pct": 100.0,
+      "invalid_count": 0,
+      "min_date": "1003-01-01 00:00:00",
+      "max_date": "8604-01-01 00:00:00",
+      "missing_count": 0
+    },
+    "APPLICATION CREATED DATE": {
+      "total": 53091,
+      "non_null_original": 11201,
+      "successfully_parsed": 11201,
+      "parse_rate_pct": 21.1,
+      "invalid_count": 0,
+      "min_date": "2021-05-21 00:00:00",
+      "max_date": "2026-08-18 00:00:00",
+      "missing_count": 41890
+    },
+    "APPLICATION REQUIREMENTS COMPLETE": {
+      "total": 53091,
+      "non_null_original": 53052,
+      "successfully_parsed": 53052,
+      "parse_rate_pct": 99.93,
+      "invalid_count": 0,
+      "min_date": "2021-07-15 00:00:00",
+      "max_date": "2026-08-18 00:00:00",
+      "missing_count": 39
+    },
+    "PAYMENT DATE": {
+      "total": 53091,
+      "non_null_original": 52953,
+      "successfully_parsed": 52953,
+      "parse_rate_pct": 99.74,
+      "invalid_count": 0,
+      "min_date": "2022-08-11 00:00:00",
+      "max_date": "2026-08-18 00:00:00",
+      "missing_count": 138
+    },
+    "LICENSE TERM START DATE": {
+      "total": 53091,
+      "non_null_original": 53088,
+      "successfully_parsed": 53088,
+      "parse_rate_pct": 99.99,
+      "invalid_count": 0,
+      "min_date": "2024-07-22 00:00:00",
+      "max_date": "2028-07-16 00:00:00",
+      "missing_count": 3
+    },
+    "LICENSE TERM EXPIRATION DATE": {
+      "total": 53091,
+      "non_null_original": 53091,
+      "successfully_parsed": 53091,
+      "parse_rate_pct": 100.0,
+      "invalid_count": 0,
+      "min_date": "2026-08-22 00:00:00",
+      "max_date": "2030-07-15 00:00:00",
+      "missing_count": 0
+    },
+    "LICENSE APPROVED FOR ISSUANCE": {
+      "total": 53091,
+      "non_null_original": 50796,
+      "successfully_parsed": 50796,
+      "parse_rate_pct": 95.68,
+      "invalid_count": 0,
+      "min_date": "2024-06-02 00:00:00",
+      "max_date": "2026-08-18 00:00:00",
+      "missing_count": 2295
+    },
+    "DATE ISSUED": {
+      "total": 53091,
+      "non_null_original": 53091,
+      "successfully_parsed": 53091,
+      "parse_rate_pct": 100.0,
+      "invalid_count": 0,
+      "min_date": "2024-07-15 00:00:00",
+      "max_date": "2026-08-18 00:00:00",
+      "missing_count": 0
+    },
+    "LICENSE STATUS CHANGE DATE": {
+      "total": 53091,
+      "non_null_original": 0,
+      "successfully_parsed": 0,
+      "parse_rate_pct": 0.0,
+      "invalid_count": 0,
+      "min_date": null,
+      "max_date": null,
+      "missing_count": 53091
+    }
+  },
+  "location_field_analysis": {
+    "ADDRESS": {
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 40127,
+      "sample_values": [
+        "4840 N MARINE DR 5 FLOORS",
+        "4809 N RAVENSWOOD AVE  116",
+        "6753 N SHERIDAN RD 1ST",
+        "1110 E 95TH ST",
+        "4011 N RAVENSWOOD AVE 1ST 103"
+      ]
+    },
+    "CITY": {
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 951,
+      "sample_values": [
+        "CHICAGO",
+        "LA GRANGE",
+        "WHEATON",
+        "ST. CHARLES",
+        "WARRENVILLE"
+      ],
+      "city_counts": {
+        "CHICAGO": 49131,
+        "CICERO": 83,
+        "NAPERVILLE": 56,
+        "DES PLAINES": 56,
+        "MELROSE PARK": 56,
+        "SKOKIE": 49,
+        "EVANSTON": 48,
+        "SCHAUMBURG": 42,
+        "PARK RIDGE": 40,
+        "PLAINFIELD": 37
+      }
+    },
+    "STATE": {
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "unique_count": 48,
+      "sample_values": [
+        "IL",
+        "TN",
+        "MN",
+        "IN",
+        "NY"
+      ],
+      "state_counts": {
+        "IL": 51947,
+        "IN": 152,
+        "CA": 95,
+        "NY": 92,
+        "TX": 87,
+        "FL": 60,
+        "WI": 55,
+        "OH": 46,
+        "GA": 46,
+        "MO": 43,
+        "MI": 39,
+        "PA": 38,
+        "MN": 37,
+        "AZ": 29,
+        "TN": 28,
+        "NJ": 27,
+        "SC": 24,
+        "NV": 22,
+        "VA": 21,
+        "NC": 20,
+        "CO": 19,
+        "WA": 17,
+        "MA": 16,
+        "KY": 13,
+        "CT": 13,
+        "IA": 10,
+        "KS": 10,
+        "UT": 9,
+        "AL": 8,
+        "NE": 8,
+        "SD": 8,
+        "MD": 7,
+        "DE": 6,
+        "LA": 5,
+        "OK": 5,
+        "NH": 5,
+        "DC": 3,
+        "ON": 3,
+        "MS": 3,
+        "ID": 2,
+        "HI": 2,
+        "QC": 2,
+        "OR": 2,
+        "ND": 2,
+        "RI": 2,
+        "AR": 1,
+        "WY": 1,
+        "ME": 1
+      }
+    },
+    "ZIP CODE": {
+      "missing_count": 16,
+      "missing_pct": 0.03,
+      "unique_count": 1186,
+      "sample_values": [
+        "60640",
+        "60626",
+        "60619",
+        "60613",
+        "60604"
+      ]
+    },
+    "WARD": {
+      "missing_count": 4084,
+      "missing_pct": 7.69,
+      "unique_count": 50,
+      "sample_values": [
+        "46",
+        "47",
+        "49",
+        "8",
+        "4"
+      ],
+      "ward_count": 50
+    },
+    "PRECINCT": {
+      "missing_count": 4287,
+      "missing_pct": 8.07,
+      "unique_count": 76,
+      "sample_values": [
+        "40",
+        "32",
+        "7",
+        "59",
+        "25"
+      ]
+    },
+    "WARD PRECINCT": {
+      "missing_count": 3936,
+      "missing_pct": 7.41,
+      "unique_count": 2513,
+      "sample_values": [
+        "46-40",
+        "47-32",
+        "49-7",
+        "8-59",
+        "47-25"
+      ]
+    },
+    "POLICE DISTRICT": {
+      "missing_count": 4037,
+      "missing_pct": 7.6,
+      "unique_count": 25,
+      "sample_values": [
+        "20",
+        "24",
+        "4",
+        "19",
+        "1"
+      ]
+    },
+    "COMMUNITY AREA": {
+      "missing_count": 4171,
+      "missing_pct": 7.86,
+      "unique_count": 78,
+      "sample_values": [
+        "3",
+        "1",
+        "47",
+        "6",
+        "32"
+      ]
+    },
+    "COMMUNITY AREA NAME": {
+      "missing_count": 4176,
+      "missing_pct": 7.87,
+      "unique_count": 77,
+      "sample_values": [
+        "UPTOWN",
+        "ROGERS PARK",
+        "BURNSIDE",
+        "LAKE VIEW",
+        "LOOP"
+      ]
+    },
+    "NEIGHBORHOOD": {
+      "missing_count": 4205,
+      "missing_pct": 7.92,
+      "unique_count": 98,
+      "sample_values": [
+        "UPTOWN",
+        "ROGERS PARK",
+        "BURNSIDE",
+        "LAKE VIEW",
+        "LOOP"
+      ]
+    },
+    "SSA": {
+      "missing_count": 39068,
+      "missing_pct": 73.59,
+      "unique_count": 53,
+      "sample_values": [
+        "34",
+        "31",
+        "54",
+        "51",
+        "23"
+      ]
+    },
+    "LATITUDE": {
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "41.970352506",
+        "41.9691903575",
+        "42.0050836914",
+        "41.7222764594",
+        "41.954603016"
+      ],
+      "invalid_lat": 0,
+      "lat_range": "[41.64467, 42.02266]"
+    },
+    "LONGITUDE": {
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "-87.6501347448",
+        "-87.6740389209",
+        "-87.6607268964",
+        "-87.5967691735",
+        "-87.6736521914"
+      ],
+      "invalid_lon": 0,
+      "lon_range": "[-87.93398, -87.5248]"
+    },
+    "LOCATION": {
+      "missing_count": 4238,
+      "missing_pct": 7.98,
+      "unique_count": 29499,
+      "sample_values": [
+        "POINT (-87.65013474477234 41.97035250602275)",
+        "POINT (-87.67403892092791 41.969190357544846)",
+        "POINT (-87.66072689641621 42.00508369143515)",
+        "POINT (-87.59676917353497 41.72227645939994)",
+        "POINT (-87.6736521913905 41.95460301600229)"
+      ]
+    }
+  },
+  "sample_records": [
+    {
+      "ID": "2948166-20280716",
+      "LICENSE ID": "3095906",
+      "ACCOUNT NUMBER": "487329",
+      "SITE NUMBER": "2",
+      "LEGAL NAME": "CHICAGO BH HOSPITAL, LLC",
+      "DOING BUSINESS AS NAME": "Montrose Behavioral Health Hospital",
+      "ADDRESS": "4840 N MARINE DR 5 FLOORS",
+      "CITY": "CHICAGO",
+      "STATE": "IL",
+      "ZIP CODE": "60640",
+      "WARD": "46",
+      "PRECINCT": "40",
+      "WARD PRECINCT": "46-40",
+      "POLICE DISTRICT": "20",
+      "COMMUNITY AREA": "3",
+      "COMMUNITY AREA NAME": "UPTOWN",
+      "NEIGHBORHOOD": "UPTOWN",
+      "LICENSE CODE": "4404",
+      "LICENSE DESCRIPTION": "Regulated Business License",
+      "BUSINESS ACTIVITY ID": "232",
+      "BUSINESS ACTIVITY": "Operation of General Medical / Surgical Hospital",
+      "LICENSE NUMBER": "2948166",
+      "APPLICATION TYPE": "RENEW",
+      "APPLICATION CREATED DATE": NaN,
+      "APPLICATION REQUIREMENTS COMPLETE": "07/28/2026",
+      "PAYMENT DATE": "07/29/2026",
+      "CONDITIONAL APPROVAL": "N",
+      "LICENSE TERM START DATE": "07/16/2028",
+      "LICENSE TERM EXPIRATION DATE": "07/15/2030",
+      "LICENSE APPROVED FOR ISSUANCE": "07/29/2026",
+      "DATE ISSUED": "07/30/2026",
+      "LICENSE STATUS": "AAI",
+      "LICENSE STATUS CHANGE DATE": NaN,
+      "SSA": "34",
+      "LATITUDE": "41.970352506",
+      "LONGITUDE": "-87.6501347448",
+      "LOCATION": "POINT (-87.65013474477234 41.97035250602275)"
+    },
+    {
+      "ID": "2818291-20261116",
+      "LICENSE ID": "3082190",
+      "ACCOUNT NUMBER": "432056",
+      "SITE NUMBER": "2",
+      "LEGAL NAME": "ALTRUISTIC ESTHETICS INC.",
+      "DOING BUSINESS AS NAME": "ALTRUISTIC ESTHETICS",
+      "ADDRESS": "4809 N RAVENSWOOD AVE  116",
+      "CITY": "CHICAGO",
+      "STATE": "IL",
+      "ZIP CODE": "60640",
+      "WARD": "47",
+      "PRECINCT": "32",
+      "WARD PRECINCT": "47-32",
+      "POLICE DISTRICT": "20",
+      "COMMUNITY AREA": "3",
+      "COMMUNITY AREA NAME": "UPTOWN",
+      "NEIGHBORHOOD": "UPTOWN",
+      "LICENSE CODE": "1010",
+      "LICENSE DESCRIPTION": "Limited Business License",
+      "BUSINESS ACTIVITY ID": "767 | 896 | 956",
+      "BUSINESS ACTIVITY": "Retail Sales of General Merchandise and Non-Perishable Food | Skincare Services | Provide Waxing Services",
+      "LICENSE NUMBER": "2818291",
+      "APPLICATION TYPE": "RENEW",
+      "APPLICATION CREATED DATE": NaN,
+      "APPLICATION REQUIREMENTS COMPLETE": "04/15/2026",
+      "PAYMENT DATE": "04/15/2026",
+      "CONDITIONAL APPROVAL": "N",
+      "LICENSE TERM START DATE": "11/16/2026",
+      "LICENSE TERM EXPIRATION DATE": "11/15/2028",
+      "LICENSE APPROVED FOR ISSUANCE": "04/15/2026",
+      "DATE ISSUED": "04/16/2026",
+      "LICENSE STATUS": "AAI",
+      "LICENSE STATUS CHANGE DATE": NaN,
+      "SSA": "31",
+      "LATITUDE": "41.9691903575",
+      "LONGITUDE": "-87.6740389209",
+      "LOCATION": "POINT (-87.67403892092791 41.969190357544846)"
+    },
+    {
+      "ID": "40561-20261016",
+      "LICENSE ID": "3096968",
+      "ACCOUNT NUMBER": "34237",
+      "SITE NUMBER": "1",
+      "LEGAL NAME": "THE ARMADILLO'S PILLOW INC",
+      "DOING BUSINESS AS NAME": "THE ARMADILLO'S PILLOW INC",
+      "ADDRESS": "6753 N SHERIDAN RD 1ST",
+      "CITY": "CHICAGO",
+      "STATE": "IL",
+      "ZIP CODE": "60626",
+      "WARD": "49",
+      "PRECINCT": "7",
+      "WARD PRECINCT": "49-7",
+      "POLICE DISTRICT": "24",
+      "COMMUNITY AREA": "1",
+      "COMMUNITY AREA NAME": "ROGERS PARK",
+      "NEIGHBORHOOD": "ROGERS PARK",
+      "LICENSE CODE": "1010",
+      "LICENSE DESCRIPTION": "Limited Business License",
+      "BUSINESS ACTIVITY ID": NaN,
+      "BUSINESS ACTIVITY": NaN,
+      "LICENSE NUMBER": "40561",
+      "APPLICATION TYPE": "RENEW",
+      "APPLICATION CREATED DATE": NaN,
+      "APPLICATION REQUIREMENTS COMPLETE": "08/15/2026",
+      "PAYMENT DATE": "08/17/2026",
+      "CONDITIONAL APPROVAL": "N",
+      "LICENSE TERM START DATE": "10/16/2026",
+      "LICENSE TERM EXPIRATION DATE": "10/15/2028",
+      "LICENSE APPROVED FOR ISSUANCE": "08/17/2026",
+      "DATE ISSUED": "08/18/2026",
+      "LICENSE STATUS": "AAI",
+      "LICENSE STATUS CHANGE DATE": NaN,
+      "SSA": "54",
+      "LATITUDE": "42.0050836914",
+      "LONGITUDE": "-87.6607268964",
+      "LOCATION": "POINT (-87.66072689641621 42.00508369143515)"
+    },
+    {
+      "ID": "2214856-20261016",
+      "LICENSE ID": "3097386",
+      "ACCOUNT NUMBER": "287744",
+      "SITE NUMBER": "1",
+      "LEGAL NAME": "A & R AUTO REBUILDERS, INC",
+      "DOING BUSINESS AS NAME": "A & R AUTO REBUILDERS, INC",
+      "ADDRESS": "1110 E 95TH ST",
+      "CITY": "CHICAGO",
+      "STATE": "IL",
+      "ZIP CODE": "60619",
+      "WARD": "8",
+      "PRECINCT": "59",
+      "WARD PRECINCT": "8-59",
+      "POLICE DISTRICT": "4",
+      "COMMUNITY AREA": "47",
+      "COMMUNITY AREA NAME": "BURNSIDE",
+      "NEIGHBORHOOD": "BURNSIDE",
+      "LICENSE CODE": "8340",
+      "LICENSE DESCRIPTION": "Motor Vehicle Services License",
+      "BUSINESS ACTIVITY ID": "711",
+      "BUSINESS ACTIVITY": "Motor Vehicle Repair - Engine and Body Work",
+      "LICENSE NUMBER": "2214856",
+      "APPLICATION TYPE": "RENEW",
+      "APPLICATION CREATED DATE": NaN,
+      "APPLICATION REQUIREMENTS COMPLETE": "08/15/2026",
+      "PAYMENT DATE": "08/17/2026",
+      "CONDITIONAL APPROVAL": "N",
+      "LICENSE TERM START DATE": "10/16/2026",
+      "LICENSE TERM EXPIRATION DATE": "10/15/2028",
+      "LICENSE APPROVED FOR ISSUANCE": "08/17/2026",
+      "DATE ISSUED": "08/18/2026",
+      "LICENSE STATUS": "AAI",
+      "LICENSE STATUS CHANGE DATE": NaN,
+      "SSA": "51",
+      "LATITUDE": "41.7222764594",
+      "LONGITUDE": "-87.5967691735",
+      "LOCATION": "POINT (-87.59676917353497 41.72227645939994)"
+    },
+    {
+      "ID": "2349392-20261016",
+      "LICENSE ID": "3098169",
+      "ACCOUNT NUMBER": "392378",
+      "SITE NUMBER": "1",
+      "LEGAL NAME": "LEO DESIGNS, LTD.",
+      "DOING BUSINESS AS NAME": "LEO DESIGNS, LTD.",
+      "ADDRESS": "4011 N RAVENSWOOD AVE 1ST 103",
+      "CITY": "CHICAGO",
+      "STATE": "IL",
+      "ZIP CODE": "60613",
+      "WARD": "47",
+      "PRECINCT": "25",
+      "WARD PRECINCT": "47-25",
+      "POLICE DISTRICT": "19",
+      "COMMUNITY AREA": "6",
+      "COMMUNITY AREA NAME": "LAKE VIEW",
+      "NEIGHBORHOOD": "LAKE VIEW",
+      "LICENSE CODE": "1010",
+      "LICENSE DESCRIPTION": "Limited Business License",
+      "BUSINESS ACTIVITY ID": "602",
+      "BUSINESS ACTIVITY": "Operation of an Administrative Commercial Office",
+      "LICENSE NUMBER": "2349392",
+      "APPLICATION TYPE": "RENEW",
+      "APPLICATION CREATED DATE": NaN,
+      "APPLICATION REQUIREMENTS COMPLETE": "08/15/2026",
+      "PAYMENT DATE": "08/17/2026",
+      "CONDITIONAL APPROVAL": "N",
+      "LICENSE TERM START DATE": "10/16/2026",
+      "LICENSE TERM EXPIRATION DATE": "10/15/2028",
+      "LICENSE APPROVED FOR ISSUANCE": "08/17/2026",
+      "DATE ISSUED": "08/18/2026",
+      "LICENSE STATUS": "AAI",
+      "LICENSE STATUS CHANGE DATE": NaN,
+      "SSA": "31",
+      "LATITUDE": "41.954603016",
+      "LONGITUDE": "-87.6736521914",
+      "LOCATION": "POINT (-87.6736521913905 41.95460301600229)"
+    }
+  ]
+}

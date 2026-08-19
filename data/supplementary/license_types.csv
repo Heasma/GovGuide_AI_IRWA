@@ -1,0 +1,57 @@
+license_code,license_description,record_count,sample_business_activity,sample_activity_ids
+1003,Commercial Garage,589,"Provide 4 or More Parking Spaces For a Fee - Available and Advertised to the Public | Provide 4 or More Parking Spaces For a Fee - to Residents, Tenants, Users, Employees and/or Guests (Not Available or Advertised to the Public)",725 | 726
+1006,Retail Food Establishment,11141,Preparation of Food and Dining on Premises With Seating | Retail Sales of Perishable Foods,735 | 775
+1007,Wholesale Food Establishment,393,Enagage in Wholesale Food Sales | Engage in Direct Food Sales to Businesses,864 | 642
+1009,Manufacturing Establishments,629,Storage or Use of Hazardous Materials (MFG) | Manufacturing of Miscellaneous Items,817 | 929
+1010,Limited Business License,16065,Retail Sales of General Merchandise and Non-Perishable Food | Skincare Services | Provide Waxing Services | Operation of an Administrative Commercial Office,767 | 896 | 956 | 602
+1023,Children's Services Facility License,851,After School Program / Tutoring Children Under 18 Years of Age | Instruction in Art for Children Under 18 Years of Age | Rental of Location for Children's Birthday Parties,905 | 683 | 749
+1032,Animal Care License,407,Provide Animal Boarding Services | Provide Animal Training Services | Provide Animal Day Care Services | Provide Guard Dog Services,608 | 612 | 950 | 669
+1039,Bicycle Messenger Service,7,Operation of a Bicycle Messenger Service,616
+1050,Public Place of Amusement,750,Provides Onsite Amusement or Entertainment | Retail Sales of General Merchandise and Non-Perishable Food | Operation of Industrial Private Event Venue,743 | 767 | 971
+1056,Public Place of Amusement (PAV),53,Live Theatrical / Live Cultural Performances (Performing Arts Venue) | Retail Sales of General Merchandise and Non-Perishable Food | Live Theatrical / Live Cultural Performances Where Organization is Operating as an Incidental Use In a Building Primarily Used In The Conduct of Activities of a Not-For-Profit Organization,697 | 767 | 698
+1070,Affiliation,19,Taxi Affiliation | Taxi Affiliation | Taxi Affiliation and Two Way Radio Dispatch,606 | 606 | 1001
+1075,Taxicab Two-Way Dispatch Service License,2,Taxicab Two-Way Dispatch Service License,830
+1082,License Manager,9,Taxicab License Manager,696
+1253,Explosives,44,Use of Explosives | Employee of a Wrecking/Demolition/Fireworks Contractor (Cert. of Fitness),853 | 653
+1275,Filling Station,431,Operation of an Automatic Car Wash | Operation of a Fuel Filling Station | Retail Sales of General Merchandise and Non-Perishable Food | Retail Sales of General Merchandise | Operation of a Fuel Filling Station,627 | 666 | 767 | 904 | 666
+1329,Special Event Food,248,"180 Day Multiple Events - Special Event Food, Mobile Food Vehicle | 180 Day Multiple Events - Special Event Food",947 | 946
+1470,Tavern,756,Tavern - Consumption of Liquor on Premises | Retail Sales of General Merchandise and Non-Perishable Food | Tavern - Consumption of Liquor on Premises | Retail Sales of General Merchandise,829 | 767 | 829 | 904
+1471,Late Hour,118,"Sale of Liquor Until 4am, Monday - Saturday and 5am on Sunday",785
+1472,Music and Dance,47,Music and Dance,916
+1473,Not-For-Profit Club,55,Consumption of Liquor on Premises - Not for Profit,639
+1474,Package Goods,1064,Retail Sales of General Merchandise and Non-Perishable Food | Retail Sales of Packaged Liquor | Retail Sales of Packaged Liquor,767 | 774 | 774
+1475,Consumption on Premises - Incidental Activity,2843,Consumption of Liquor on Premises | Consumption of Liquor on Premises | Retail Sales of General Merchandise and Non-Perishable Food | Retail Sales of General Merchandise,638 | 638 | 767 | 904
+1476,Special Event Liquor,13,"Special Event Beer, Wine & Spirits | Special Event Beer & Wine",996 | 717
+1477,Outdoor Patio,734,Sale of Liquor Outdoors on Private Property | Wrigley Field Sports Plaza,784 | 980
+1480,Wrigley Field,13,Wrigley Field Rooftop,868
+1481,Caterer's Liquor License,280,Catering of Liquor To Events | Catering of Liquor To Events | Retail Sales of General Merchandise and Non-Perishable Food,630 | 630 | 767
+1594,Pawnbroker,46,Pledging of Property for Money (Pawnbroker / Pawn Shop) | Pledging of Property for Money (Pawnbroker / Pawn Shop) | Retail Sales of General Merchandise and Non-Perishable Food,732 | 732 | 767
+1625,Raffles,304,Not-For-Profit Selling Raffles for Prizes of $50 or More | Miscellaneous Commercial Services | Not-For-Profit Selling Raffles for Prizes of $50 or More,720 | 708 | 720
+1683,Secondhand Dealer,245,Electronic Equipment Repair | Retail Sales of New Electronics and Accessories | Retail Sales of Used Electronics | Retail Sales of Cell Phones and Accessories | Buying and Reselling of Used Valuable Objects,652 | 772 | 777 | 922 | 624
+1781,Tobacco,1842,Retail Sales of General Merchandise and Non-Perishable Food | Retail Sales of Tobacco Products | Retail Sales of Tobacco Accessories | Retail Sales of Tobacco and Flavored Tobacco Products | Retail Sales of Tobacco Products | Retail Sales of Tobacco Accessories | Retail Sales of Tobacco and Flavored Tobacco Products,767 | 776 | 936 | 937 | 776 | 936 | 937
+2101,Valet Parking Operator,212,Valet Parking Operator,855
+3717,Heliports,5,"Operation of a Heliport, Helistop or Vertiport",671
+4404,Regulated Business License,7476,Operation of General Medical / Surgical Hospital | Acquisition and Improvement of Land/Residential Buildings (Residential Real Estate Developer),232 | 601
+4405,Mobile Food License,188,Preparation and Sale of Food (ONLY) from a Mobile Food Truck (Mobile Food Preparer) | Sales of Packaged Frozen Desserts From a Non-Motorized Cart (Mobile Desserts Vendor),734 | 796
+4406,Peddler License,1448,"Combination - Street Performer and Retail Sales of General Merchandise, Whole Uncut Fruits/Vegetables, Flowers | Peddler (Over 65 Years of Age) - Retail Sales of General Merchandise, Whole Uncut Fruits/Vegetables, Flowers, Moving Along the Public Way",968 | 770
+4408,Navy Pier Kiosk License,3,Retail Sales of Food From a Kiosk/Cart/Arcade at Navy Pier | Retail Sales of General Merchandise and Non-Perishable Food From a Kiosk/Cart/Arcade at Navy Pier,765 | 768
+4409,Pop-Up Retail User,126,Organizer of Event with Retail Vendors (1-5 Day Show) | Sale of General Merchandise at Flea Market 181-365 Consecutive Days,1027 | 1072
+7002,Emerging Business,2,Operation of a Personal Delivery Device Program (Pilot),1130
+7003,Transportation Network Provider,5,Transportation Network Provider,940
+7006,Short Term Residential Rental Intermediary,2,"Platform to Connect Guests With Short Term Residential Rental Providers; Lists1,000 or More Shared Housing Units on Platform",987
+7008,Shared Housing Unit Operator,208,Shared Housing Operator - Host of More Than One Shared Housing Unit,981
+7009,Pharmaceutical Representative,805,Markets / Promotes Pharmaceuticals to Health Care Professionals and Conducts Business for More than 15 Calendar Days per Year,990
+7013,Pop-Up Establishment Host - Tier II,6,Pop-Up Food Est. User Host - Tier II (Pre-Packaged Prepared Hot/Cold Food. Final Prep On-Site),1025
+7020,Commercial Passenger Vessel,33,Operation of a Commercial Passenger Vessel | Operation of a Commercial Passenger Vessel - Under 20 Passengers,1163 | 1011
+7029,Towing - Storage Lot,29,Operation of Tow Storage Lot Outside the City of Chicago | Operation of Tow Storage Lot Within the City of Chicago,1081 | 1080
+7030,Towing - Tow Truck,82,Operation of a Tow Truck | Operation of a Tow Truck at a Licensed Motor Vehicle Repair Shop,1079 | 1171
+7032,Scooter Sharing License,1,Operation of a Scooter Sharing Business,1088
+7034,Primary Sports License,12,Operation of a Sports Wagering Facility By a Master Sports Wagering Licensee,1091
+7035,Secondary Sports License,11,Operation of a Sports Wagering Facility By a Licensed Management Services Provider,1092
+7036,Outdoor Entertainment Venue,1,Operation of an Outdoor Entertainment Venue,1100
+8340,Motor Vehicle Services License,1505,Motor Vehicle Repair - Engine and Body Work | Motor Vehicle Repair -  Engine and Transmission Work,711 | 712
+8342,Food - Shared Kitchen,17,Operation of a Shared Kitchen,802
+8343,Food - Shared Kitchen - Supplemental,117,Operation of a Shared Kitchen - Secondary to Primary Business (Supplemental),803
+8344,Shared Kitchen User (Long Term),790,Shared Kitchen User - Long Term | Shared Kitchen User - Long Term | Shared Kitchen User - Long Term Sale of Food Prepared Onsite (Includes the Use of Tier II Pop Up Food Est. User License),804 | 804 | 1126
+8345,Shared Kitchen User (Short Term),2,Shared Kitchen User - Short Term (90 Days or Less - Not Renewable),805
+8604,Private Booting Registration,7,Private Booting Registration,997
