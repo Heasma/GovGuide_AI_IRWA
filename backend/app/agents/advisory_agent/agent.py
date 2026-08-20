@@ -26,10 +26,8 @@ from app.llm.llm_client import BaseLLMClient, get_llm_client
 logger = structlog.get_logger(__name__)
 
 INSUFFICIENT_EVIDENCE_RESPONSE = (
-    "I could not find sufficient official evidence in the City of Chicago knowledge base "
-    "to provide a reliable answer to your query. Please consult the City of Chicago "
-    "Department of Business Affairs and Consumer Protection (BACP) at (312) 744-6249 or "
-    "visit https://www.chicago.gov/BusinessDirect directly."
+    "I couldn't find a matching government service with sufficient official evidence in the available GovGuide dataset. "
+    "Please try using the service name, department, or a more specific question."
 )
 
 
@@ -77,10 +75,9 @@ class AdvisoryAgent:
                 confidence_label=ConfidenceLabel.INSUFFICIENT,
                 sources=[],
                 caveats=[
-                    "Available official evidence was insufficient for this specific inquiry.",
-                    "Please verify directly with the City of Chicago Department of Business Affairs and Consumer Protection (BACP).",
+                    "The available government dataset did not contain a sufficiently relevant service record."
                 ],
-                explanation="Retrieval confidence was below the minimum verification threshold.",
+                explanation="No sufficiently relevant service records were found in the database.",
                 response_validated=True,
                 fabrication_detected=False,
             )

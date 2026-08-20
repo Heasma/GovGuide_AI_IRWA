@@ -32,10 +32,10 @@ import logoMark from '../assets/images/logo_mark.svg'
 // ── Constants ──────────────────────────────────────────────────────────
 
 const EXAMPLE_QUERIES = [
-  'How can I start a business?',
   'What documents are required for a business license?',
-  'How do I renew my business license?',
-  'Where should I apply?',
+  'How do I apply for a government service?',
+  'Which services are available online?',
+  'Where can I apply for this service?',
 ]
 
 // ── Sub-components ─────────────────────────────────────────────────────
