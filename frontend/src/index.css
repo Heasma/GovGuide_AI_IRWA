@@ -1517,7 +1517,7 @@ input, textarea { font-family: inherit; }
 
 .ai-thinking__text { font-size: 13px; color: var(--color-text-secondary); font-style: italic; }
 
-/* ── Citizen Error Message ───────────────────────────────────── */
+/* ── Citizen Error Message & AI Error Card ──────────────────── */
 .citizen-error-msg {
   display: flex;
   align-items: flex-start;
@@ -1535,6 +1535,53 @@ input, textarea { font-family: inherit; }
 .citizen-error-msg svg { flex-shrink: 0; margin-top: 1px; }
 
 .citizen-error-msg--inline { margin: 0; align-self: flex-start; max-width: 640px; }
+
+.ai-error-card {
+  flex: 1;
+  min-width: 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ai-error-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ai-error-card__icon {
+  color: var(--color-danger);
+  flex-shrink: 0;
+}
+
+.ai-error-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.ai-error-card__message {
+  font-size: 13px;
+  color: #7f1d1d;
+  line-height: 1.55;
+  margin: 0 0 14px 0;
+}
+
+.ai-error-card__action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.msg-avatar--error {
+  background: #ef4444 !important;
+  color: white !important;
+}
 
 /* ── Chat messages override: Phase 5 spacing ─────────────────── */
 .chat-messages {

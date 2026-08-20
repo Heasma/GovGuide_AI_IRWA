@@ -1,3 +1,12 @@
+/**
+ * GovGuide AI — Citizen-Facing AI Assistant Chat Page
+ *
+ * Implements robust provider error detection and safe rendering.
+ * Never exposes raw [LLM_PROVIDER_ERROR] strings, stack traces, or internal error codes.
+ * Ensures confidence, explanations, sources, caveats, and demo badges are ONLY rendered
+ * on legitimate, successful AI answers.
+ */
+
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { queryService } from '../services/authService'
 import { useAuth } from '../context/AuthContext'
@@ -15,7 +24,7 @@ import {
 } from 'lucide-react'
 import ConfidenceBadge from '../components/portal/ConfidenceBadge'
 import SourceCard from '../components/portal/SourceCard'
-import { getCitizenErrorMessage } from '../utils/errorMessages'
+import { getCitizenErrorMessage, isProviderErrorResponse } from '../utils/errorMessages'
 
 // Import assets
 import logoMark from '../assets/images/logo_mark.svg'
@@ -92,7 +101,49 @@ function SourcesSection({ sources }) {
   )
 }
 
-function AssistantMessage({ message }) {
+function AssistantErrorMessage({ message, onRetry, loading }) {
+  return (
+    <div className="msg-row msg-row--assistant fade-in" role="alert" aria-label="GovGuide AI error">
+      <div className="msg-avatar msg-avatar--assistant msg-avatar--error">
+        <AlertCircle size={15} aria-hidden="true" />
+      </div>
+
+      <div className="ai-error-card">
+        <div className="ai-error-card__header">
+          <AlertCircle size={16} className="ai-error-card__icon" aria-hidden="true" />
+          <span className="ai-error-card__title">
+            {message.errorTitle || 'Unable to generate an answer'}
+          </span>
+        </div>
+        <p className="ai-error-card__message">
+          {message.errorMessage || 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.'}
+        </p>
+        {onRetry && message.retryQuery && (
+          <div className="ai-error-card__action">
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => onRetry(message.retryQuery)}
+              disabled={loading}
+              aria-label="Try submitting your query again"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            >
+              <RefreshCw size={13} aria-hidden="true" />
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AssistantMessage({ message, onRetry, loading }) {
+  // If this message represents an error response or provider failure
+  if (message.isError) {
+    return <AssistantErrorMessage message={message} onRetry={onRetry} loading={loading} />
+  }
+
   const data = message.data
 
   return (
@@ -115,7 +166,7 @@ function AssistantMessage({ message }) {
           {data?.answer || message.content}
         </div>
 
-        {/* Confidence + Explanation */}
+        {/* Confidence + Explanation (ONLY on successful valid answers) */}
         {data?.confidence_label && (
           <div className="ai-response-confidence">
             <ConfidenceBadge confidenceLabel={data.confidence_label} />
@@ -255,7 +306,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [heroError, setHeroError] = useState('')
   const endRef = useRef(null)
   const inputRef = useRef(null)
   const sessionId = useRef(
@@ -278,30 +329,58 @@ export default function ChatPage() {
     }
   }, [hasMessages])
 
-  const handleSend = useCallback(async (e) => {
-    e?.preventDefault()
-    const query = input.trim()
+  const handleSend = useCallback(async (explicitQuery) => {
+    const query = (typeof explicitQuery === 'string' ? explicitQuery : input).trim()
     if (!query || loading) return
 
     setInput('')
-    setError('')
+    setHeroError('')
     setMessages(prev => [...prev, { id: Date.now(), role: 'user', content: query }])
     setLoading(true)
 
     try {
       const result = await queryService.submitQuery(query, sessionId.current)
+
+      // ── DETECT BACKEND/PROVIDER ERRORS BEFORE RENDERING ──────────
+      if (isProviderErrorResponse(result)) {
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          isError: true,
+          errorTitle: 'Unable to generate an answer',
+          errorMessage: 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.',
+          retryQuery: query,
+        }])
+      } else {
+        // Legitimate, valid AI response
+        setMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          isError: false,
+          content: result.answer,
+          data: result,
+        }])
+      }
+    } catch (err) {
+      const citizenMsg = getCitizenErrorMessage(err)
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         role: 'assistant',
-        content: result.answer,
-        data: result,
+        isError: true,
+        errorTitle: 'Unable to generate an answer',
+        errorMessage: citizenMsg,
+        retryQuery: query,
       }])
-    } catch (err) {
-      setError(getCitizenErrorMessage(err))
     } finally {
       setLoading(false)
     }
   }, [input, loading])
+
+  const handleRetry = useCallback((retryQuery) => {
+    if (retryQuery && !loading) {
+      handleSend(retryQuery)
+    }
+  }, [handleSend, loading])
 
   const handleExampleClick = useCallback((query) => {
     setInput(query)
@@ -311,7 +390,7 @@ export default function ChatPage() {
   const handleNewQuestion = useCallback(() => {
     setMessages([])
     setInput('')
-    setError('')
+    setHeroError('')
     sessionId.current = typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `session-${Date.now()}`
@@ -354,15 +433,15 @@ export default function ChatPage() {
           <ChatHero
             inputValue={input}
             onInputChange={setInput}
-            onSubmit={handleSend}
+            onSubmit={e => { e.preventDefault(); handleSend(); }}
             onExampleClick={handleExampleClick}
             loading={loading}
             inputRef={inputRef}
           />
-          {error && (
+          {heroError && (
             <div className="citizen-error-msg" role="alert">
               <AlertCircle size={15} aria-hidden="true" />
-              <span>{error}</span>
+              <span>{heroError}</span>
             </div>
           )}
         </div>
@@ -375,24 +454,17 @@ export default function ChatPage() {
             {messages.map(msg =>
               msg.role === 'user'
                 ? <UserMessage key={msg.id} content={msg.content} />
-                : <AssistantMessage key={msg.id} message={msg} />
+                : <AssistantMessage key={msg.id} message={msg} onRetry={handleRetry} loading={loading} />
             )}
 
             {loading && <ThinkingIndicator />}
-
-            {error && (
-              <div className="citizen-error-msg citizen-error-msg--inline fade-in" role="alert">
-                <AlertCircle size={15} aria-hidden="true" />
-                <span>{error}</span>
-              </div>
-            )}
 
             <div ref={endRef} aria-hidden="true" />
           </div>
 
           {/* ── Chat Input Area ──────────────────────────────── */}
           <div className="chat-input-area">
-            <form onSubmit={handleSend}>
+            <form onSubmit={e => { e.preventDefault(); handleSend(); }}>
               <div className="chat-input-box">
                 <textarea
                   id="chat-input"

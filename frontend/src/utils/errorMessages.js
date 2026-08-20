@@ -1,15 +1,15 @@
 /**
  * GovGuide AI — Citizen-Friendly Error Message Utility
  *
- * Maps Axios/API errors to safe, citizen-readable messages.
+ * Maps Axios/API errors and provider failure payloads to safe, citizen-readable messages.
  * NEVER exposes: stack traces, JWT tokens, API keys, database errors,
- * raw Python/OpenAI exceptions, or internal error codes.
+ * raw Python/OpenAI exceptions, internal error codes, or [LLM_PROVIDER_ERROR] strings.
  */
 
 const CITIZEN_MESSAGES = {
   // HTTP status codes
   429: 'Too many requests. Please wait a moment and try again.',
-  500: 'GovGuide AI encountered an unexpected error. Please try again shortly.',
+  500: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
   502: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
   503: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
   504: 'GovGuide AI is taking too long to respond. Please try again.',
@@ -24,6 +24,34 @@ const CITIZEN_MESSAGES = {
 
   // Default fallback
   DEFAULT: 'An error occurred. Please try again.',
+}
+
+/**
+ * Detects whether a backend query response indicates a provider/LLM/pipeline failure.
+ *
+ * @param {Object} result - The QueryResponse object returned by POST /api/v1/query.
+ * @returns {boolean} True if the response represents an error rather than a valid answer.
+ */
+export function isProviderErrorResponse(result) {
+  if (!result || typeof result !== 'object') return true
+  const answer = typeof result.answer === 'string' ? result.answer.trim() : ''
+  if (!answer) return true
+
+  // Check for LLM provider error markers
+  if (
+    answer.includes('LLM_PROVIDER_ERROR') ||
+    answer.includes('[LLM_PROVIDER_ERROR]') ||
+    answer.includes('RATE_LIMIT_EXCEEDED') ||
+    answer.includes('Rate limit exceeded on LLM provider') ||
+    answer.includes('Authentication failure with the configured LLM provider') ||
+    answer.includes('LLM provider error:') ||
+    answer.includes('Unexpected error during LLM generation:') ||
+    answer.startsWith('[ERROR]')
+  ) {
+    return true
+  }
+
+  return false
 }
 
 /**

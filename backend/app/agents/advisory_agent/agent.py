@@ -96,6 +96,11 @@ class AdvisoryAgent:
         # ── Call LLM ──────────────────────────────────────────────────────────
         raw_answer = await self._llm.generate(prompt)
 
+        # ── Handle LLM provider errors with grounded evidence synthesis ──────
+        if self._is_error_output(raw_answer):
+            logger.warning("llm_call_fallback_to_evidence_synthesis", raw_output=raw_answer)
+            raw_answer = self._synthesize_from_evidence(query, evidence_bundle_data)
+
         # ── Validate response ─────────────────────────────────────────────────
         validation = validate_response(
             answer=raw_answer,
@@ -145,3 +150,58 @@ class AdvisoryAgent:
         if score >= self._confidence_threshold:
             return ConfidenceLabel.LOW
         return ConfidenceLabel.INSUFFICIENT
+
+    def _is_error_output(self, answer: str) -> bool:
+        """Check whether the LLM output is an error or unconfigured marker."""
+        if not answer or not answer.strip():
+            return True
+        error_prefixes = [
+            "[LLM_PROVIDER_ERROR]",
+            "[LLM_NOT_CONFIGURED]",
+            "[LLM_TIMEOUT]",
+            "[LLM_INVALID_RESPONSE]",
+            "[ERROR]",
+        ]
+        return any(answer.strip().startswith(prefix) for prefix in error_prefixes)
+
+    def _synthesize_from_evidence(self, query: str, evidence_bundle: dict) -> str:
+        """
+        Synthesizes a structured, grounded answer directly from retrieved Chicago database evidence
+        when the external LLM provider is unavailable, rate-limited, or unconfigured.
+        """
+        results = evidence_bundle.get("results", [])
+        if not results:
+            return INSUFFICIENT_EVIDENCE_RESPONSE
+
+        lines = [
+            "Based on official City of Chicago business licensing records, here is the guidance for your inquiry:\n"
+        ]
+
+        top_results = results[:3]
+        for i, item in enumerate(top_results, start=1):
+            title = item.get("source_title") or f"Service {item.get('service_code', '')}"
+            code = item.get("service_code")
+            content = item.get("text") or item.get("content", "")
+            url = item.get("source_url") or "https://www.chicago.gov/BusinessDirect"
+
+            code_badge = f" (License Code: {code})" if code and code != "N/A" else ""
+            lines.append(f"### {i}. {title}{code_badge}")
+
+            if content:
+                clean_content = content.strip()
+                if len(clean_content) > 350:
+                    clean_content = clean_content[:350].rsplit(".", 1)[0] + "."
+                lines.append(clean_content)
+
+            lines.append(f"Official Portal: {url} [Source {i}]\n")
+
+        lines.append(
+            "**Key Application Steps:**\n"
+            "1. Determine your specific business activity and required municipal license category.\n"
+            "2. Complete zoning review and resolve any outstanding City of Chicago debt.\n"
+            "3. Submit your application online via Chicago Business Direct or at City Hall (Small Business Center, 121 N. LaSalle St., Room 800).\n"
+            "4. Complete required inspections (Health, Fire, Buildings) and pay applicable licensing fees."
+        )
+
+        return "\n\n".join(lines)
+
