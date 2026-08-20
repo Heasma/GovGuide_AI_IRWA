@@ -16,11 +16,20 @@ sys.path.insert(0, BACKEND_DIR)
 from app.config import get_settings
 from app.database import Base
 
-# Import all models so Alembic can see them
+# Import ALL models so Alembic sees every table in Base.metadata
 from app.models import (  # noqa: F401
-    User, QuerySession, ConversationMessage,
-    AuditLog, AgentInteractionLog,
-    GovernmentOffice, GovernmentService, OfficialSource, DocumentChunk,
+    User,
+    QuerySession,
+    ConversationMessage,
+    AuditLog,
+    AgentInteractionLog,
+    GovernmentOffice,
+    GovernmentService,
+    OfficialSource,
+    DocumentChunk,
+    # Phase 3
+    BusinessLicenseHolder,
+    BusinessLicense,
 )
 
 config = context.config

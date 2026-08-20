@@ -8,6 +8,7 @@ Import all models here so that:
 
 Import order matters for FK resolution:
   base → user → conversation → government_service → official_source
+       → business_license (depends on government_service)
 """
 
 from app.models.base import Base  # noqa: F401  — exposes Base for Alembic
@@ -26,6 +27,10 @@ from app.models.official_source import (  # noqa: F401
     OfficialSource,
     DocumentChunk,
 )
+from app.models.business_license import (  # noqa: F401 — Phase 3
+    BusinessLicenseHolder,
+    BusinessLicense,
+)
 
 __all__ = [
     "Base",
@@ -38,4 +43,7 @@ __all__ = [
     "GovernmentService",
     "OfficialSource",
     "DocumentChunk",
+    # Phase 3 additions
+    "BusinessLicenseHolder",
+    "BusinessLicense",
 ]

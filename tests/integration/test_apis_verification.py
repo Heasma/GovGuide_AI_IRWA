@@ -4,7 +4,6 @@ API end-to-end integration checks
 
 import pytest
 import uuid
-import os
 from httpx import AsyncClient, ASGITransport
 
 from app.main import create_app
@@ -22,7 +21,7 @@ async def dispose_engine():
 @pytest.mark.anyio
 async def test_services_and_query_apis():
     """
-    Verify Query API and Services API dataset pending responses.
+    Verify Query API and Services API with live government business-license dataset.
     """
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -48,32 +47,41 @@ async def test_services_and_query_apis():
         assert "answer" in query_data
         assert query_data["is_demo"] is True
 
-        # 3. Test Services API endpoints (behaving correctly with dataset-pending design)
+        # 3. Test Services API endpoints (returning real ingested government dataset)
         # Services list
-        response_services = await client.get("/api/v1/services")
+        response_services = await client.get("/api/v1/services?limit=10")
         assert response_services.status_code == 200
         services_data = response_services.json()
-        assert services_data["status"] == "dataset_pending"
-        assert "/services" in services_data["endpoint"]
+        assert "total" in services_data
+        assert services_data["total"] >= 56
+        assert len(services_data["items"]) <= 10
+        assert len(services_data["items"]) > 0
+
+        first_service = services_data["items"][0]
+        first_service_id = first_service["id"]
+        assert "service_code" in first_service
+        assert "name" in first_service
 
         # Categories list
         response_categories = await client.get("/api/v1/services/categories")
         assert response_categories.status_code == 200
         categories_data = response_categories.json()
-        assert categories_data["status"] == "dataset_pending"
-        assert "/services/categories" in categories_data["endpoint"]
+        assert "total" in categories_data
+        assert "categories" in categories_data
+        assert len(categories_data["categories"]) > 0
 
         # Services search
-        response_search = await client.get("/api/v1/services/search?query=passport")
+        response_search = await client.get("/api/v1/services/search?query=food")
         assert response_search.status_code == 200
         search_data = response_search.json()
-        assert search_data["status"] == "dataset_pending"
-        assert "/services/search" in search_data["endpoint"]
+        assert search_data["query"] == "food"
+        assert search_data["total"] > 0
+        assert any("food" in item["name"].lower() or (item["description"] and "food" in item["description"].lower()) for item in search_data["items"])
 
         # Service detail
-        service_id = str(uuid.uuid4())
-        response_detail = await client.get(f"/api/v1/services/{service_id}")
+        response_detail = await client.get(f"/api/v1/services/{first_service_id}")
         assert response_detail.status_code == 200
         detail_data = response_detail.json()
-        assert detail_data["status"] == "dataset_pending"
-        assert f"/services/{service_id}" in detail_data["endpoint"]
+        assert detail_data["id"] == first_service_id
+        assert detail_data["service_code"] == first_service["service_code"]
+        assert detail_data["name"] == first_service["name"]

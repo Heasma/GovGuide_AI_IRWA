@@ -17,6 +17,11 @@ from app.schemas.query_schema import (
 )
 from app.schemas.service_schema import (
     DatasetPendingResponse,
+    GovernmentOfficeResponse,
+    GovernmentServiceResponse,
+    ServiceListResponse,
+    CategoryListResponse,
+    ServiceSearchResponse,
 )
 from app.schemas.session_schema import (
     SessionSummary,
@@ -43,6 +48,11 @@ __all__ = [
     "QueryResponse",
     "FeedbackRequest",
     "DatasetPendingResponse",
+    "GovernmentOfficeResponse",
+    "GovernmentServiceResponse",
+    "ServiceListResponse",
+    "CategoryListResponse",
+    "ServiceSearchResponse",
     "SessionSummary",
     "MessageRecord",
     "AdminUserRecord",
