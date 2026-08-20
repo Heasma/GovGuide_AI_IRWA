@@ -208,21 +208,21 @@ class RetrievalService:
             if retrieval_mode == "hybrid" and isinstance(top_res, HybridResult):
                 bm25_s = top_res.bm25_score
                 sem_s = top_res.semantic_score
-                if bm25_s == 0.0:
-                    # No lexical overlap across corpus -> Out-of-domain match
-                    confidence = round(sem_s * 0.2, 3)
-                elif bm25_s > 0.0 and sem_s >= 0.20:
+                if bm25_s < 1.5:
+                    # Insufficient lexical overlap across corpus -> Out-of-domain match
+                    confidence = round(min(0.12, sem_s * 0.15), 3)
+                elif bm25_s >= 3.0 and sem_s >= 0.20:
                     # Strong multi-modal agreement
-                    confidence = round(min(1.0, 0.5 + (top_score / 0.0328) * 0.45), 3)
-                elif bm25_s > 2.0:
-                    # Strong lexical match
+                    confidence = round(min(1.0, 0.6 + (top_score / 0.0328) * 0.38), 3)
+                elif bm25_s >= 1.5:
+                    # Moderate lexical match
                     confidence = round(min(0.85, 0.4 + (bm25_s / 10.0) * 0.4), 3)
                 else:
-                    confidence = round(min(0.4, max(0.05, sem_s)), 3)
+                    confidence = round(min(0.14, max(0.05, sem_s * 0.1)), 3)
             elif retrieval_mode == "semantic":
-                confidence = round(top_score if top_score >= 0.30 else top_score * 0.2, 3)
+                confidence = round(top_score if top_score >= 0.40 else top_score * 0.15, 3)
             else:
-                confidence = round(min(1.0, top_score / 10.0) if top_score > 1.0 else 0.05, 3)
+                confidence = round(min(1.0, top_score / 10.0) if top_score >= 2.0 else 0.05, 3)
 
         return EvidenceBundle(
             query=query,

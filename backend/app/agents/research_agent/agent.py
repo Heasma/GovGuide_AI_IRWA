@@ -95,10 +95,16 @@ class ResearchAgent:
             sufficient_evidence=sufficient,
         )
 
+        top_service_name = "None"
+        if evidence_bundle.results:
+            top_service_name = evidence_bundle.results[0].service_name or evidence_bundle.results[0].source_title or "Government Service"
+
         logger.info(
             "research_agent_complete",
             request_id=message.request_id,
-            retrieved=evidence_bundle.total_retrieved,
+            question_received=query,
+            relevant_records_found=evidence_bundle.total_retrieved,
+            selected_service=top_service_name,
             confidence=retrieval_confidence,
             sufficient=sufficient,
         )

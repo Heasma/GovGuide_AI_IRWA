@@ -63,6 +63,24 @@ class Orchestrator:
             log.warning("injection_detected", detail=str(e))
             return self._injection_blocked_response(request_id)
 
+        # ── Step 1b: Friendly greeting check ─────────────────────────────────
+        import re
+        if re.match(r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings|hi\s+there|hello\s+there|howdy)[!.]*$", query.strip(), re.I):
+            return QueryResponse(
+                request_id=request_id,
+                answer=(
+                    "Hello! I am GovGuide AI, your City of Chicago government services and business licensing assistant. "
+                    "How can I help you today? You can ask me about business licenses (such as Retail Food, Limited Business, or Children's Services), "
+                    "application procedures, required documentation, fees, or City department offices."
+                ),
+                confidence_score=1.0,
+                confidence_label=ConfidenceLabel.HIGH,
+                sources=[],
+                caveats=[],
+                explanation="Greeting response provided by assistant.",
+                is_demo=False,
+            )
+
         # ── Step 2: Build & send task to Research Agent ───────────────────────
         research_task = AgentMessage(
             request_id=request_id,

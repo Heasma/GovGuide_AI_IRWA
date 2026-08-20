@@ -8,17 +8,22 @@
 
 const CITIZEN_MESSAGES = {
   // HTTP status codes
-  429: 'Too many requests. Please wait a moment and try again.',
-  500: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
-  502: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
-  503: 'GovGuide AI is temporarily unavailable. Please try again shortly.',
-  504: 'GovGuide AI is taking too long to respond. Please try again.',
+  422: 'Please enter a question to get assistance.',
+  429: 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.',
+  500: 'GovGuide AI is temporarily unavailable. Please try again later.',
+  502: 'GovGuide AI is temporarily unavailable. Please try again later.',
+  503: 'GovGuide AI is temporarily unavailable. Please try again later.',
+  504: 'GovGuide AI took too long to respond. Please try again.',
 
   // Known backend error codes in response detail
   LLM_PROVIDER_ERROR: 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.',
+  LLM_PROVIDER_ERROR_RATELIMIT: 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.',
+  LLM_PROVIDER_ERROR_AUTH: 'GovGuide AI is temporarily unavailable. Please try again later.',
+  LLM_PROVIDER_ERROR_TIMEOUT: 'GovGuide AI took too long to respond. Please try again.',
+  LLM_PROVIDER_ERROR_NETWORK: 'Unable to connect to the AI service. Please try again.',
   LLM_TIMEOUT: 'GovGuide AI took too long to respond. Please try again.',
   RETRIEVAL_ERROR: 'There was a problem searching for information. Please try again.',
-  RATE_LIMIT_EXCEEDED: 'Too many requests. Please wait a moment and try again.',
+  RATE_LIMIT_EXCEEDED: 'GovGuide AI is temporarily unable to generate an answer. Please try again shortly.',
   CONTEXT_TOO_LONG: 'Your question is too long. Please shorten it and try again.',
   QUERY_TOO_SHORT: 'Please provide a more detailed question.',
 
