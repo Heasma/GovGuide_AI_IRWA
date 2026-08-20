@@ -4,13 +4,9 @@ Uses pydantic-settings for type-safe environment variable loading.
 All secrets are sourced from environment variables / .env file.
 """
 
-from pathlib import Path
-from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-ENV_FILE_PATH = PROJECT_ROOT / ".env"
+from typing import List
 
 
 class Settings(BaseSettings):
@@ -21,7 +17,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE_PATH),
+        env_file="../.env",
         env_file_encoding="utf-8-sig",  # handles BOM from Windows editors
         case_sensitive=False,
         extra="ignore",                 # ignore VITE_* and other unknown vars

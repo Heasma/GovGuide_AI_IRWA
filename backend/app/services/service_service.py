@@ -7,11 +7,14 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.service_repository import ServiceRepository
+from app.repositories.source_repository import SourceRepository
 from app.schemas.service_schema import (
     GovernmentServiceResponse,
     ServiceListResponse,
     CategoryListResponse,
     ServiceSearchResponse,
+    OfficialSourceResponse,
+    SourceListResponse,
 )
 
 
@@ -98,3 +101,26 @@ class ServiceService:
             raise HTTPException(status_code=404, detail="Government service not found")
 
         return GovernmentServiceResponse.model_validate(service)
+
+    @staticmethod
+    async def list_sources(
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 50,
+        endpoint: Optional[str] = None,
+    ) -> SourceListResponse:
+        """
+        Coordinates listing official source documents.
+        Returns structured SourceListResponse with real database records.
+        """
+        from sqlalchemy import select, func
+        from app.models.official_source import OfficialSource
+
+        count_result = await db.execute(select(func.count(OfficialSource.id)))
+        total = count_result.scalar_one()
+
+        sources = await SourceRepository.list(db, skip=skip, limit=limit)
+        return SourceListResponse(
+            total=total,
+            items=[OfficialSourceResponse.model_validate(s) for s in sources],
+        )

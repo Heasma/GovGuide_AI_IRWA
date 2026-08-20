@@ -3,6 +3,7 @@ GovGuide AI — Government Service Schemas
 """
 
 import uuid
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -79,3 +80,21 @@ class ServiceSearchResponse(BaseModel):
     query: str
     total: int
     items: List[GovernmentServiceResponse]
+
+
+class OfficialSourceResponse(BaseModel):
+    """Response schema for a single OfficialSource record."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: Optional[str] = None
+    url: Optional[str] = None
+    source_type: Optional[str] = None
+    verified_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+
+
+class SourceListResponse(BaseModel):
+    """Paginated list of official sources."""
+    total: int
+    items: List[OfficialSourceResponse]

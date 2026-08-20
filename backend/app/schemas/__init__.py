@@ -23,6 +23,8 @@ from app.schemas.service_schema import (
     ServiceListResponse,
     CategoryListResponse,
     ServiceSearchResponse,
+    OfficialSourceResponse,
+    SourceListResponse,
 )
 from app.schemas.session_schema import (
     SessionSummary,
@@ -55,6 +57,8 @@ __all__ = [
     "ServiceListResponse",
     "CategoryListResponse",
     "ServiceSearchResponse",
+    "OfficialSourceResponse",
+    "SourceListResponse",
     "SessionSummary",
     "MessageRecord",
     "AdminUserRecord",

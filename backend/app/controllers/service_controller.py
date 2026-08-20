@@ -86,3 +86,22 @@ async def get_service(
     return await ServiceService.get_service(
         db, service_id=service_id, endpoint=str(request.url)
     )
+
+
+@router.get(
+    "/sources",
+    response_model=None,
+    summary="List official knowledge sources",
+)
+async def list_sources(
+    request: Request,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns paginated list of official source documents indexed in the system.
+    Returns an empty list when no sources have been ingested yet.
+    """
+    from app.schemas.service_schema import SourceListResponse
+    return await ServiceService.list_sources(db, skip=skip, limit=limit, endpoint=str(request.url))
