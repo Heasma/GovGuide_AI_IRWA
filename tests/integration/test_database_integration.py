@@ -22,12 +22,6 @@ from app.models.conversation import QuerySession, ConversationMessage
 
 app = create_app()
 
-@pytest.fixture(autouse=True)
-async def dispose_engine():
-    yield
-    from app.database import engine
-    await engine.dispose()
-
 
 @pytest.mark.anyio
 async def test_database_connection():

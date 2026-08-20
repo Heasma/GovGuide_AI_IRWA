@@ -1,16 +1,19 @@
 """
 GovGuide AI — Advisory Agent
-Generates a grounded response from evidence supplied by the Research Agent.
 
-RESPONSIBLE AI PRINCIPLE:
-The Advisory Agent ONLY generates text from retrieved evidence.
-It NEVER fabricates government information.
-If evidence is insufficient, it returns a "cannot confirm" response.
+Generates grounded responses from evidence supplied by the Research Agent.
 
-Phase 1: LLM interface is a stub. The agent returns a structured placeholder response.
+RESPONSIBLE AI PRINCIPLES:
+1. The Advisory Agent ONLY generates answers grounded in retrieved evidence.
+2. It NEVER fabricates government facts, fees, procedures, or deadlines.
+3. If evidence is insufficient, it returns a safe, explanatory advisory with official office referrals.
+4. It treats all retrieved evidence strictly as passive DATA, ignoring any instructions embedded within.
 """
 
 import structlog
+from typing import Optional
+
+from app.config import get_settings
 from app.orchestrator.message_schema import (
     AgentMessage, AgentId, MessageType,
     AdvisoryResultPayload, ConfidenceLabel,
@@ -18,45 +21,41 @@ from app.orchestrator.message_schema import (
 )
 from app.agents.advisory_agent.prompt_builder import build_prompt
 from app.agents.advisory_agent.response_validator import validate_response
+from app.llm.llm_client import BaseLLMClient, get_llm_client
 
 logger = structlog.get_logger(__name__)
 
-# Threshold below which the system admits insufficient evidence
-CONFIDENCE_THRESHOLD = 0.5
-
-# Standard "insufficient evidence" response (mandated by Responsible AI policy)
 INSUFFICIENT_EVIDENCE_RESPONSE = (
-    "I could not find sufficient official evidence to provide a reliable answer to your query. "
-    "Please consult the relevant government authority or official portal directly."
+    "I could not find sufficient official evidence in the City of Chicago knowledge base "
+    "to provide a reliable answer to your query. Please consult the City of Chicago "
+    "Department of Business Affairs and Consumer Protection (BACP) at (312) 744-6249 or "
+    "visit https://www.chicago.gov/BusinessDirect directly."
 )
 
 
 class AdvisoryAgent:
     """
-    Responsible for:
-    1. Receiving the EvidenceBundle from the Research Agent
-    2. Building a grounded prompt (evidence → LLM)
-    3. Generating a response using the LLM
-    4. Validating the response for hallucination indicators
-    5. Returning a structured, source-attributed answer
-
-    The agent NEVER accesses external sources directly.
-    It only processes the evidence supplied by the Research Agent.
+    Advisory Agent coordinating prompt generation, LLM inference, and Responsible AI response validation.
     """
 
     AGENT_ID = AgentId.ADVISORY_AGENT
 
-    def __init__(self):
-        from app.llm.llm_client import get_llm_client
-        self._llm = get_llm_client()
-        logger.info("advisory_agent_initialized", llm_type=type(self._llm).__name__)
+    def __init__(self, llm_client: Optional[BaseLLMClient] = None):
+        settings = get_settings()
+        self._llm = llm_client or get_llm_client()
+        self._confidence_threshold = settings.RETRIEVAL_CONFIDENCE_THRESHOLD
+        logger.info(
+            "advisory_agent_initialized",
+            llm_type=type(self._llm).__name__,
+            confidence_threshold=self._confidence_threshold,
+        )
 
     async def process(self, message: AgentMessage) -> AgentMessage:
         """
-        Main entry point. Receives a task message from the orchestrator,
-        returns a result message with the validated answer.
+        Main entry point. Receives an AdvisoryTask message from the orchestrator,
+        executes grounded generation, validates the result, and returns an AdvisoryResult message.
         """
-        payload = message.payload
+        payload = message.payload if isinstance(message.payload, dict) else message.payload.model_dump()
         query: str = payload.get("user_query", "")
         sufficient: bool = payload.get("sufficient_evidence", False)
         retrieval_confidence: float = payload.get("retrieval_confidence", 0.0)
@@ -71,17 +70,17 @@ class AdvisoryAgent:
         )
 
         # ── Responsible AI: Insufficient evidence check ───────────────────────
-        if not sufficient or retrieval_confidence < CONFIDENCE_THRESHOLD:
+        if not sufficient or retrieval_confidence < self._confidence_threshold:
             result = AdvisoryResultPayload(
                 answer=INSUFFICIENT_EVIDENCE_RESPONSE,
                 confidence_score=0.0,
                 confidence_label=ConfidenceLabel.INSUFFICIENT,
                 sources=[],
                 caveats=[
-                    "No sufficient official evidence was found for this query.",
-                    "Please verify with the relevant government authority.",
+                    "Available official evidence was insufficient for this specific inquiry.",
+                    "Please verify directly with the City of Chicago Department of Business Affairs and Consumer Protection (BACP).",
                 ],
-                explanation="Retrieval confidence was below the minimum threshold.",
+                explanation="Retrieval confidence was below the minimum verification threshold.",
                 response_validated=True,
                 fabrication_detected=False,
             )
@@ -139,10 +138,10 @@ class AdvisoryAgent:
     def _confidence_label(self, score: float, validated: bool) -> ConfidenceLabel:
         if not validated:
             return ConfidenceLabel.INSUFFICIENT
-        if score >= 0.8:
+        if score >= 0.75:
             return ConfidenceLabel.HIGH
-        if score >= 0.6:
+        if score >= 0.45:
             return ConfidenceLabel.MEDIUM
-        if score >= 0.4:
+        if score >= self._confidence_threshold:
             return ConfidenceLabel.LOW
         return ConfidenceLabel.INSUFFICIENT

@@ -15,6 +15,7 @@ from app.schemas.query_schema import (
     QueryResponse,
     FeedbackRequest,
 )
+from app.orchestrator.message_schema import ConfidenceLabel
 from app.schemas.service_schema import (
     DatasetPendingResponse,
     GovernmentOfficeResponse,
@@ -46,6 +47,7 @@ __all__ = [
     "SourceReference",
     "QueryRequest",
     "QueryResponse",
+    "ConfidenceLabel",
     "FeedbackRequest",
     "DatasetPendingResponse",
     "GovernmentOfficeResponse",

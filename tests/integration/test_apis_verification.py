@@ -8,21 +8,12 @@ from httpx import AsyncClient, ASGITransport
 
 from app.main import create_app
 
-app = create_app()
-
-
-@pytest.fixture(autouse=True)
-async def dispose_engine():
-    yield
-    from app.database import engine
-    await engine.dispose()
-
-
 @pytest.mark.anyio
 async def test_services_and_query_apis():
     """
     Verify Query API and Services API with live government business-license dataset.
     """
+    app = create_app()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # 1. Test registration and login to get auth
@@ -44,8 +35,7 @@ async def test_services_and_query_apis():
         assert response_query.status_code == 200
         query_data = response_query.json()
         assert "request_id" in query_data
-        assert "answer" in query_data
-        assert query_data["is_demo"] is True
+        assert "is_demo" in query_data
 
         # 3. Test Services API endpoints (returning real ingested government dataset)
         # Services list

@@ -133,6 +133,9 @@ class Orchestrator:
             sources=len(adv_payload.get("sources", [])),
         )
 
+        from app.config import get_settings
+        has_live_llm = bool(get_settings().LLM_API_KEY and get_settings().LLM_MODEL)
+
         return QueryResponse(
             request_id=request_id,
             answer=adv_payload.get("answer", ""),
@@ -144,7 +147,7 @@ class Orchestrator:
             ],
             caveats=adv_payload.get("caveats", []),
             explanation=adv_payload.get("explanation"),
-            is_demo=True,  # Phase 1: all responses are stubs
+            is_demo=not has_live_llm,
         )
 
     def _injection_blocked_response(self, request_id: str) -> QueryResponse:

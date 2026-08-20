@@ -1,13 +1,14 @@
 """
 GovGuide AI — Response Validator (Advisory Agent)
-Checks that the LLM-generated response is grounded in retrieved evidence.
 
-Phase 1: Heuristic foundation. Not a complete hallucination detector.
-Phase 2: Semantic entailment checking against evidence content.
+Validates that LLM-generated responses are strictly grounded in retrieved evidence
+and comply with Responsible AI citation and anti-hallucination principles.
 """
 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
+
+from app.responsible_ai.grounding_checker import check_grounding_and_citations
 
 
 @dataclass
@@ -24,55 +25,43 @@ def validate_response(
 ) -> ValidationResult:
     """
     Validates a generated response against the supplied evidence bundle.
-
-    Phase 1 checks:
-    - Is the answer non-empty?
-    - Does the evidence bundle have any content?
-    - Are any source attributions possible?
-
-    Phase 2: Add semantic entailment scoring.
     """
     results = evidence_bundle.get("results", [])
 
-    # Empty answer
+    # Empty answer check
     if not answer or not answer.strip():
         return ValidationResult(
             passed=False,
+            attributed_sources=[],
             caveats=["Response was empty."],
             explanation="LLM returned an empty response.",
         )
 
-    # No evidence was retrieved
+    # Missing evidence check
     if not results:
         return ValidationResult(
             passed=False,
+            attributed_sources=[],
             caveats=[
                 "No evidence was retrieved for this query.",
-                "Government dataset integration is pending.",
-                "Please consult an official government source directly.",
+                "Please consult the official City of Chicago BACP portal directly.",
             ],
             explanation="No evidence in bundle — cannot validate response.",
         )
 
-    # Build source attribution from retrieved results
-    attributed_sources = [
-        {
-            "source_id": r.get("source_id", ""),
-            "title": r.get("source_title", "Unknown"),
-            "url": r.get("source_url"),
-            "excerpt": r.get("content", "")[:200],  # first 200 chars as excerpt
-        }
-        for r in results[:5]  # top 5 sources
-    ]
+    grounding = check_grounding_and_citations(answer, evidence_bundle)
 
-    caveats = [
-        "Always verify important information with the official government source.",
-        "This response is based on retrieved documents and may not reflect the most current information.",
-    ]
+    if not grounding.is_grounded:
+        return ValidationResult(
+            passed=False,
+            attributed_sources=grounding.attributed_sources,
+            caveats=grounding.caveats + grounding.reasons,
+            explanation=f"Grounding validation failed: {'; '.join(grounding.reasons)}",
+        )
 
     return ValidationResult(
         passed=True,
-        attributed_sources=attributed_sources,
-        caveats=caveats,
-        explanation="Response generated from retrieved evidence. Semantic validation pending (Phase 2).",
+        attributed_sources=grounding.attributed_sources,
+        caveats=grounding.caveats,
+        explanation="Response verified and grounded against official evidence.",
     )

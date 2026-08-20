@@ -31,5 +31,11 @@ class AgentRegistry:
             raise ValueError(f"Agent '{agent_id}' is not registered.")
         return agent
 
+    def register(self, agent, agent_id: AgentId = None):
+        aid = agent_id or getattr(agent, "AGENT_ID", None)
+        if aid is None:
+            raise ValueError("Cannot determine agent_id for registration.")
+        self._agents[aid] = agent
+
     def list_agents(self) -> list:
         return list(self._agents.keys())

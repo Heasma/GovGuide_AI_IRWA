@@ -202,17 +202,27 @@ class RetrievalService:
         # ── Calculate Confidence ──────────────────────────────────────────────
         confidence = 0.0
         if evidence_results:
+            top_res = attributed_candidates[0] if attributed_candidates else None
             top_score = evidence_results[0].score or evidence_results[0].relevance_score
-            # In RRF, top score is typically in range 0.015 to 0.033. Scale to 0.0-1.0
-            if retrieval_mode == "hybrid":
-                # For RRF k=60, rank 1 score is 1/61 = 0.01639. If rank 1 in both, 2/61 = 0.0328
-                scaled = min(1.0, (top_score / 0.032) * 0.9 + 0.1)
-                confidence = round(scaled, 3)
+
+            if retrieval_mode == "hybrid" and isinstance(top_res, HybridResult):
+                bm25_s = top_res.bm25_score
+                sem_s = top_res.semantic_score
+                if bm25_s == 0.0:
+                    # No lexical overlap across corpus -> Out-of-domain match
+                    confidence = round(sem_s * 0.2, 3)
+                elif bm25_s > 0.0 and sem_s >= 0.20:
+                    # Strong multi-modal agreement
+                    confidence = round(min(1.0, 0.5 + (top_score / 0.0328) * 0.45), 3)
+                elif bm25_s > 2.0:
+                    # Strong lexical match
+                    confidence = round(min(0.85, 0.4 + (bm25_s / 10.0) * 0.4), 3)
+                else:
+                    confidence = round(min(0.4, max(0.05, sem_s)), 3)
             elif retrieval_mode == "semantic":
-                confidence = round(top_score, 3)
+                confidence = round(top_score if top_score >= 0.30 else top_score * 0.2, 3)
             else:
-                # BM25: score > 5 indicates strong match
-                confidence = round(min(1.0, top_score / 10.0), 3)
+                confidence = round(min(1.0, top_score / 10.0) if top_score > 1.0 else 0.05, 3)
 
         return EvidenceBundle(
             query=query,
