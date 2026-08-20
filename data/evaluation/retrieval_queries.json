@@ -1,0 +1,156 @@
+[
+  {
+    "id": "q01",
+    "query": "What license do I need to open a restaurant or cafe in Chicago?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1006"],
+    "description": "General food establishment license discovery query"
+  },
+  {
+    "id": "q02",
+    "query": "How do I apply for a Retail Food Establishment License?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1006"],
+    "description": "Direct service application procedure query"
+  },
+  {
+    "id": "q03",
+    "query": "What are the fees for a Retail Food Establishment License?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1006"],
+    "description": "Fee inquiry for retail food"
+  },
+  {
+    "id": "q04",
+    "query": "What is a Limited Business License and who needs one?",
+    "category": "retail_general",
+    "expected_service_codes": ["1010"],
+    "description": "General retail license overview query"
+  },
+  {
+    "id": "q05",
+    "query": "How do I apply for a Limited Business License LBL?",
+    "category": "retail_general",
+    "expected_service_codes": ["1010"],
+    "description": "LBL application procedure query"
+  },
+  {
+    "id": "q06",
+    "query": "What documents do I need to renew my Limited Business License?",
+    "category": "retail_general",
+    "expected_service_codes": ["1010"],
+    "description": "LBL renewal and documentation inquiry"
+  },
+  {
+    "id": "q07",
+    "query": "Where can I apply for a retail tobacco license in Chicago?",
+    "category": "tobacco",
+    "expected_service_codes": ["1781"],
+    "description": "Tobacco license application query"
+  },
+  {
+    "id": "q08",
+    "query": "How do I get a Mobile Food Vendor license for a food truck?",
+    "category": "food_beverage",
+    "expected_service_codes": ["4405"],
+    "description": "Mobile food truck license discovery query"
+  },
+  {
+    "id": "q09",
+    "query": "What license is needed to operate a shared commercial kitchen?",
+    "category": "food_beverage",
+    "expected_service_codes": ["8342", "8340"],
+    "description": "Shared kitchen business license query"
+  },
+  {
+    "id": "q10",
+    "query": "How do I get a license to serve alcohol on premises in my restaurant?",
+    "category": "liquor_alcohol",
+    "expected_service_codes": ["1475"],
+    "description": "Liquor / consumption on premises license query"
+  },
+  {
+    "id": "q11",
+    "query": "What is license code 1006 in Chicago?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1006"],
+    "description": "Direct license code lookup for Retail Food"
+  },
+  {
+    "id": "q12",
+    "query": "What is license code 1010?",
+    "category": "retail_general",
+    "expected_service_codes": ["1010"],
+    "description": "Direct license code lookup for LBL"
+  },
+  {
+    "id": "q13",
+    "query": "What is license code 4404 for Regulated Business?",
+    "category": "retail_general",
+    "expected_service_codes": ["4404"],
+    "description": "Direct license code lookup for Regulated Business"
+  },
+  {
+    "id": "q14",
+    "query": "What are the requirements for opening a daycare or children's facility?",
+    "category": "childcare_education",
+    "expected_service_codes": ["1050"],
+    "description": "Children's services facility license query"
+  },
+  {
+    "id": "q15",
+    "query": "How do I get an auto repair shop license in Chicago?",
+    "category": "motor_vehicle",
+    "expected_service_codes": ["1625"],
+    "description": "Motor vehicle repair license discovery query"
+  },
+  {
+    "id": "q16",
+    "query": "What license do I need to operate a public music venue or amusement hall?",
+    "category": "entertainment_amusement",
+    "expected_service_codes": ["1039"],
+    "description": "Public place of amusement license query"
+  },
+  {
+    "id": "q17",
+    "query": "How do I obtain a Wholesale Food Establishment license for distributing groceries?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1007"],
+    "description": "Wholesale food distributor license query"
+  },
+  {
+    "id": "q18",
+    "query": "What department handles Chicago business license applications?",
+    "category": "general",
+    "expected_service_codes": ["1010", "1006"],
+    "description": "Department/Office inquiry (BACP)"
+  },
+  {
+    "id": "q19",
+    "query": "How long is a Chicago business license valid before renewal?",
+    "category": "general",
+    "expected_service_codes": ["1010", "1006"],
+    "description": "License validity term and renewal period inquiry"
+  },
+  {
+    "id": "q20",
+    "query": "What license is needed for a street peddler or cart seller?",
+    "category": "food_beverage",
+    "expected_service_codes": ["4406"],
+    "description": "Peddler license query"
+  },
+  {
+    "id": "q21",
+    "query": "What license is required for operating a massage establishment?",
+    "category": "health_medical",
+    "expected_service_codes": ["1253"],
+    "description": "Massage establishment license query"
+  },
+  {
+    "id": "q22",
+    "query": "How do I apply for a Special Event Food license for a weekend street festival?",
+    "category": "food_beverage",
+    "expected_service_codes": ["1329"],
+    "description": "Special event temporary food license query"
+  }
+]

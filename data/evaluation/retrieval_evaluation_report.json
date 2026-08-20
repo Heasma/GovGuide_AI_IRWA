@@ -1,0 +1,1245 @@
+{
+  "evaluation_timestamp": "2026-08-20 03:21:19 UTC",
+  "total_queries": 22,
+  "modes": {
+    "bm25": {
+      "precision_at_5": 0.7273,
+      "recall_at_5": 0.7273,
+      "mrr_at_10": 0.75,
+      "latency_avg_ms": 1.07,
+      "latency_median_ms": 0.84,
+      "latency_p95_ms": 4.06,
+      "queries_evaluated": 22,
+      "query_results": [
+        {
+          "query_id": "q01",
+          "query": "What license do I need to open a restaurant or cafe in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.45
+        },
+        {
+          "query_id": "q02",
+          "query": "How do I apply for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.7
+        },
+        {
+          "query_id": "q03",
+          "query": "What are the fees for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.49
+        },
+        {
+          "query_id": "q04",
+          "query": "What is a Limited Business License and who needs one?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.52
+        },
+        {
+          "query_id": "q05",
+          "query": "How do I apply for a Limited Business License LBL?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.54
+        },
+        {
+          "query_id": "q06",
+          "query": "What documents do I need to renew my Limited Business License?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.48
+        },
+        {
+          "query_id": "q07",
+          "query": "Where can I apply for a retail tobacco license in Chicago?",
+          "expected": [
+            "1781"
+          ],
+          "retrieved_top5": [
+            "1781",
+            "1781",
+            "1781",
+            "1781",
+            "1781"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.65
+        },
+        {
+          "query_id": "q08",
+          "query": "How do I get a Mobile Food Vendor license for a food truck?",
+          "expected": [
+            "4405"
+          ],
+          "retrieved_top5": [
+            "4405",
+            "4405",
+            "4405",
+            "4405",
+            "4405"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.36
+        },
+        {
+          "query_id": "q09",
+          "query": "What license is needed to operate a shared commercial kitchen?",
+          "expected": [
+            "8342",
+            "8340"
+          ],
+          "retrieved_top5": [
+            "8342",
+            "8343",
+            "8342",
+            "8342",
+            "8342"
+          ],
+          "precision_at_5": 0.8,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.06
+        },
+        {
+          "query_id": "q10",
+          "query": "How do I get a license to serve alcohol on premises in my restaurant?",
+          "expected": [
+            "1475"
+          ],
+          "retrieved_top5": [
+            "1475",
+            "1475",
+            "1475",
+            "1475",
+            "1475"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.17
+        },
+        {
+          "query_id": "q11",
+          "query": "What is license code 1006 in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.8
+        },
+        {
+          "query_id": "q12",
+          "query": "What is license code 1010?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.25
+        },
+        {
+          "query_id": "q13",
+          "query": "What is license code 4404 for Regulated Business?",
+          "expected": [
+            "4404"
+          ],
+          "retrieved_top5": [
+            "4404",
+            "4404",
+            "4404",
+            "4404",
+            "4404"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 1.33
+        },
+        {
+          "query_id": "q14",
+          "query": "What are the requirements for opening a daycare or children's facility?",
+          "expected": [
+            "1050"
+          ],
+          "retrieved_top5": [
+            "1023",
+            "1023",
+            "1023",
+            "1023",
+            "1023"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 0.33
+        },
+        {
+          "query_id": "q15",
+          "query": "How do I get an auto repair shop license in Chicago?",
+          "expected": [
+            "1625"
+          ],
+          "retrieved_top5": [
+            "8340",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 1.45
+        },
+        {
+          "query_id": "q16",
+          "query": "What license do I need to operate a public music venue or amusement hall?",
+          "expected": [
+            "1039"
+          ],
+          "retrieved_top5": [
+            "1056",
+            "1056",
+            "1056",
+            "1050",
+            "1050"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 1.04
+        },
+        {
+          "query_id": "q17",
+          "query": "How do I obtain a Wholesale Food Establishment license for distributing groceries?",
+          "expected": [
+            "1007"
+          ],
+          "retrieved_top5": [
+            "1007",
+            "1007",
+            "1007",
+            "1007",
+            "1007"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.64
+        },
+        {
+          "query_id": "q18",
+          "query": "What department handles Chicago business license applications?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1082",
+            "1010",
+            "4404",
+            "1032",
+            "7032"
+          ],
+          "precision_at_5": 0.2,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 0.5,
+          "latency_ms": 0.93
+        },
+        {
+          "query_id": "q19",
+          "query": "How long is a Chicago business license valid before renewal?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "8344",
+            "8344",
+            "8344",
+            "8344",
+            "8344"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 0.75
+        },
+        {
+          "query_id": "q20",
+          "query": "What license is needed for a street peddler or cart seller?",
+          "expected": [
+            "4406"
+          ],
+          "retrieved_top5": [
+            "4406",
+            "4406",
+            "4406",
+            "4406",
+            "4406"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.47
+        },
+        {
+          "query_id": "q21",
+          "query": "What license is required for operating a massage establishment?",
+          "expected": [
+            "1253"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1007",
+            "1007",
+            "7013",
+            "7013"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 0.59
+        },
+        {
+          "query_id": "q22",
+          "query": "How do I apply for a Special Event Food license for a weekend street festival?",
+          "expected": [
+            "1329"
+          ],
+          "retrieved_top5": [
+            "1329",
+            "1329",
+            "1329",
+            "1329",
+            "1329"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 0.59
+        }
+      ]
+    },
+    "semantic": {
+      "precision_at_5": 0.5,
+      "recall_at_5": 0.5909,
+      "mrr_at_10": 0.5773,
+      "latency_avg_ms": 5.59,
+      "latency_median_ms": 5.28,
+      "latency_p95_ms": 7.77,
+      "queries_evaluated": 22,
+      "query_results": [
+        {
+          "query_id": "q01",
+          "query": "What license do I need to open a restaurant or cafe in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1329"
+          ],
+          "precision_at_5": 0.8,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.44
+        },
+        {
+          "query_id": "q02",
+          "query": "How do I apply for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.51
+        },
+        {
+          "query_id": "q03",
+          "query": "What are the fees for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.23
+        },
+        {
+          "query_id": "q04",
+          "query": "What is a Limited Business License and who needs one?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.18
+        },
+        {
+          "query_id": "q05",
+          "query": "How do I apply for a Limited Business License LBL?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.71
+        },
+        {
+          "query_id": "q06",
+          "query": "What documents do I need to renew my Limited Business License?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.47
+        },
+        {
+          "query_id": "q07",
+          "query": "Where can I apply for a retail tobacco license in Chicago?",
+          "expected": [
+            "1781"
+          ],
+          "retrieved_top5": [
+            "1781",
+            "1781",
+            "1781",
+            "1781",
+            "1781"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.1
+        },
+        {
+          "query_id": "q08",
+          "query": "How do I get a Mobile Food Vendor license for a food truck?",
+          "expected": [
+            "4405"
+          ],
+          "retrieved_top5": [
+            "4405",
+            "4405",
+            "4405",
+            "4405",
+            "4405"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.29
+        },
+        {
+          "query_id": "q09",
+          "query": "What license is needed to operate a shared commercial kitchen?",
+          "expected": [
+            "8342",
+            "8340"
+          ],
+          "retrieved_top5": [
+            "1470",
+            "4404",
+            "1010",
+            "1474",
+            "1010"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 4.9
+        },
+        {
+          "query_id": "q10",
+          "query": "How do I get a license to serve alcohol on premises in my restaurant?",
+          "expected": [
+            "1475"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1475"
+          ],
+          "precision_at_5": 0.2,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 0.2,
+          "latency_ms": 5.41
+        },
+        {
+          "query_id": "q11",
+          "query": "What is license code 1006 in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "4404",
+            "8340",
+            "1474",
+            "1470",
+            "7002"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 6.98
+        },
+        {
+          "query_id": "q12",
+          "query": "What is license code 1010?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "4404",
+            "4404",
+            "1010",
+            "7002"
+          ],
+          "precision_at_5": 0.4,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.42
+        },
+        {
+          "query_id": "q13",
+          "query": "What is license code 4404 for Regulated Business?",
+          "expected": [
+            "4404"
+          ],
+          "retrieved_top5": [
+            "4404",
+            "4404",
+            "4404",
+            "4404",
+            "4404"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.55
+        },
+        {
+          "query_id": "q14",
+          "query": "What are the requirements for opening a daycare or children's facility?",
+          "expected": [
+            "1050"
+          ],
+          "retrieved_top5": [
+            "1023",
+            "1023",
+            "1023",
+            "1023",
+            "1023"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 6.32
+        },
+        {
+          "query_id": "q15",
+          "query": "How do I get an auto repair shop license in Chicago?",
+          "expected": [
+            "1625"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1006",
+            "1275",
+            "1010",
+            "8340"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 5.14
+        },
+        {
+          "query_id": "q16",
+          "query": "What license do I need to operate a public music venue or amusement hall?",
+          "expected": [
+            "1039"
+          ],
+          "retrieved_top5": [
+            "1050",
+            "1050",
+            "1050",
+            "1050",
+            "1050"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 5.94
+        },
+        {
+          "query_id": "q17",
+          "query": "How do I obtain a Wholesale Food Establishment license for distributing groceries?",
+          "expected": [
+            "1007"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 6.6
+        },
+        {
+          "query_id": "q18",
+          "query": "What department handles Chicago business license applications?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "4404",
+            "1010",
+            "4404",
+            "1010",
+            "1474"
+          ],
+          "precision_at_5": 0.4,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 0.5,
+          "latency_ms": 7.5
+        },
+        {
+          "query_id": "q19",
+          "query": "How long is a Chicago business license valid before renewal?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "4404",
+            "1010"
+          ],
+          "precision_at_5": 0.8,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 1.0,
+          "latency_ms": 7.82
+        },
+        {
+          "query_id": "q20",
+          "query": "What license is needed for a street peddler or cart seller?",
+          "expected": [
+            "4406"
+          ],
+          "retrieved_top5": [
+            "4406",
+            "1010",
+            "4406",
+            "8340",
+            "4404"
+          ],
+          "precision_at_5": 0.4,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 4.6
+        },
+        {
+          "query_id": "q21",
+          "query": "What license is required for operating a massage establishment?",
+          "expected": [
+            "1253"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 4.64
+        },
+        {
+          "query_id": "q22",
+          "query": "How do I apply for a Special Event Food license for a weekend street festival?",
+          "expected": [
+            "1329"
+          ],
+          "retrieved_top5": [
+            "1050",
+            "1050",
+            "1050",
+            "1006",
+            "1050"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 5.28
+        }
+      ]
+    },
+    "hybrid": {
+      "precision_at_5": 0.5909,
+      "recall_at_5": 0.6591,
+      "mrr_at_10": 0.7388,
+      "latency_avg_ms": 7.38,
+      "latency_median_ms": 6.72,
+      "latency_p95_ms": 13.81,
+      "queries_evaluated": 22,
+      "query_results": [
+        {
+          "query_id": "q01",
+          "query": "What license do I need to open a restaurant or cafe in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.51
+        },
+        {
+          "query_id": "q02",
+          "query": "How do I apply for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.73
+        },
+        {
+          "query_id": "q03",
+          "query": "What are the fees for a Retail Food Establishment License?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 7.61
+        },
+        {
+          "query_id": "q04",
+          "query": "What is a Limited Business License and who needs one?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 13.1
+        },
+        {
+          "query_id": "q05",
+          "query": "How do I apply for a Limited Business License LBL?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 13.94
+        },
+        {
+          "query_id": "q06",
+          "query": "What documents do I need to renew my Limited Business License?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 8.56
+        },
+        {
+          "query_id": "q07",
+          "query": "Where can I apply for a retail tobacco license in Chicago?",
+          "expected": [
+            "1781"
+          ],
+          "retrieved_top5": [
+            "1781",
+            "1781",
+            "1781",
+            "1781",
+            "1781"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.0
+        },
+        {
+          "query_id": "q08",
+          "query": "How do I get a Mobile Food Vendor license for a food truck?",
+          "expected": [
+            "4405"
+          ],
+          "retrieved_top5": [
+            "4405",
+            "4405",
+            "4405",
+            "4405",
+            "4405"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.54
+        },
+        {
+          "query_id": "q09",
+          "query": "What license is needed to operate a shared commercial kitchen?",
+          "expected": [
+            "8342",
+            "8340"
+          ],
+          "retrieved_top5": [
+            "8342",
+            "8342",
+            "1470",
+            "8343",
+            "4404"
+          ],
+          "precision_at_5": 0.4,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.71
+        },
+        {
+          "query_id": "q10",
+          "query": "How do I get a license to serve alcohol on premises in my restaurant?",
+          "expected": [
+            "1475"
+          ],
+          "retrieved_top5": [
+            "1475",
+            "1006",
+            "1475",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 0.4,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 10.91
+        },
+        {
+          "query_id": "q11",
+          "query": "What is license code 1006 in Chicago?",
+          "expected": [
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "4404"
+          ],
+          "precision_at_5": 0.8,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.93
+        },
+        {
+          "query_id": "q12",
+          "query": "What is license code 1010?",
+          "expected": [
+            "1010"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.74
+        },
+        {
+          "query_id": "q13",
+          "query": "What is license code 4404 for Regulated Business?",
+          "expected": [
+            "4404"
+          ],
+          "retrieved_top5": [
+            "4404",
+            "4404",
+            "4404",
+            "4404",
+            "4404"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.06
+        },
+        {
+          "query_id": "q14",
+          "query": "What are the requirements for opening a daycare or children's facility?",
+          "expected": [
+            "1050"
+          ],
+          "retrieved_top5": [
+            "1023",
+            "1023",
+            "1023",
+            "1023",
+            "1023"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 5.37
+        },
+        {
+          "query_id": "q15",
+          "query": "How do I get an auto repair shop license in Chicago?",
+          "expected": [
+            "1625"
+          ],
+          "retrieved_top5": [
+            "8340",
+            "1010",
+            "1010",
+            "1010",
+            "1010"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 8.21
+        },
+        {
+          "query_id": "q16",
+          "query": "What license do I need to operate a public music venue or amusement hall?",
+          "expected": [
+            "1039"
+          ],
+          "retrieved_top5": [
+            "1050",
+            "1050",
+            "1050",
+            "1056",
+            "1056"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 7.04
+        },
+        {
+          "query_id": "q17",
+          "query": "How do I obtain a Wholesale Food Establishment license for distributing groceries?",
+          "expected": [
+            "1007"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1006",
+            "1006",
+            "1006"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.1429,
+          "latency_ms": 7.45
+        },
+        {
+          "query_id": "q18",
+          "query": "What department handles Chicago business license applications?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "4404",
+            "1082",
+            "7035",
+            "7002"
+          ],
+          "precision_at_5": 0.2,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.68
+        },
+        {
+          "query_id": "q19",
+          "query": "How long is a Chicago business license valid before renewal?",
+          "expected": [
+            "1010",
+            "1006"
+          ],
+          "retrieved_top5": [
+            "1010",
+            "4404",
+            "7002",
+            "1781",
+            "8344"
+          ],
+          "precision_at_5": 0.2,
+          "recall_at_5": 0.5,
+          "mrr_at_10": 1.0,
+          "latency_ms": 5.6
+        },
+        {
+          "query_id": "q20",
+          "query": "What license is needed for a street peddler or cart seller?",
+          "expected": [
+            "4406"
+          ],
+          "retrieved_top5": [
+            "4406",
+            "4406",
+            "4406",
+            "4406",
+            "4406"
+          ],
+          "precision_at_5": 1.0,
+          "recall_at_5": 1.0,
+          "mrr_at_10": 1.0,
+          "latency_ms": 6.22
+        },
+        {
+          "query_id": "q21",
+          "query": "What license is required for operating a massage establishment?",
+          "expected": [
+            "1253"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "1007",
+            "1007",
+            "1006"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.0,
+          "latency_ms": 5.59
+        },
+        {
+          "query_id": "q22",
+          "query": "How do I apply for a Special Event Food license for a weekend street festival?",
+          "expected": [
+            "1329"
+          ],
+          "retrieved_top5": [
+            "1006",
+            "1006",
+            "4405",
+            "4405",
+            "4405"
+          ],
+          "precision_at_5": 0.0,
+          "recall_at_5": 0.0,
+          "mrr_at_10": 0.1111,
+          "latency_ms": 6.78
+        }
+      ]
+    }
+  },
+  "summary": {
+    "best_mrr_mode": "bm25",
+    "best_recall_mode": "bm25",
+    "hybrid_precision_at_5": 0.5909,
+    "hybrid_recall_at_5": 0.6591,
+    "hybrid_mrr_at_10": 0.7388,
+    "hybrid_latency_avg_ms": 7.38,
+    "hybrid_latency_p95_ms": 13.81
+  }
+}

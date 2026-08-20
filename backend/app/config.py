@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     # ── Retrieval ─────────────────────────────────────────────
     RETRIEVAL_MODE: str = "hybrid"
     RETRIEVAL_TOP_K: int = 10
+    RRF_K: int = 60
+    BM25_K1: float = 1.5
+    BM25_B: float = 0.75
+    RETRIEVAL_CONFIDENCE_THRESHOLD: float = 0.15
 
     # ── Logging ───────────────────────────────────────────────
     LOG_LEVEL: str = "INFO"

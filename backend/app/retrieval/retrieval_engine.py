@@ -1,14 +1,13 @@
 """
-GovGuide AI — Retrieval Engine (Stub)
-Unified interface for information retrieval.
+GovGuide AI — Retrieval Engine
 
-Phase 1: Returns empty EvidenceBundle (no dataset, no index).
-Phase 2: Connect real BM25 + vector + hybrid retrievers after dataset indexing.
-
-The interface is deliberately stable so Phase 2 is a drop-in replacement.
+Unified interface for information retrieval delegating to RetrievalService.
+Maintains backward compatibility with Phase 1/2 callers.
 """
 
+from typing import Optional
 from app.orchestrator.message_schema import EvidenceBundle
+from app.retrieval.retrieval_service import RetrievalService
 import structlog
 
 logger = structlog.get_logger(__name__)
@@ -17,18 +16,16 @@ logger = structlog.get_logger(__name__)
 class RetrievalEngine:
     """
     Unified retrieval interface.
-    Supports: bm25 | vector | hybrid (configurable).
-
-    Phase 1: Stub — always returns empty bundle.
-    Phase 2: Route to real retrievers based on RETRIEVAL_MODE config.
+    Routes queries through the RetrievalService (BM25, Semantic, or Hybrid).
     """
 
-    def __init__(self, mode: str = "hybrid"):
+    def __init__(self, mode: str = "hybrid", service: Optional[RetrievalService] = None):
         self.mode = mode
+        self._service = service or RetrievalService()
         logger.info(
             "retrieval_engine_initialized",
             mode=mode,
-            status="stub — dataset integration pending",
+            status="active",
         )
 
     async def search(
@@ -38,17 +35,12 @@ class RetrievalEngine:
         filters: dict = None,
     ) -> EvidenceBundle:
         """
-        Execute a retrieval query.
-
-        Phase 1: Returns empty bundle.
-        Phase 2: Routes to BM25Retriever, VectorRetriever, or HybridRetriever.
+        Execute a retrieval query via RetrievalService.
         """
         logger.debug(
             "retrieval_search_called",
             query_length=len(query),
             top_k=top_k,
             mode=self.mode,
-            status="stub",
         )
-        # Phase 2: implement real retrieval here
-        return EvidenceBundle(total_retrieved=0, results=[])
+        return self._service.search(query=query, top_k=top_k, mode=self.mode)

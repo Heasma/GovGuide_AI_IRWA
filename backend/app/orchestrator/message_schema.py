@@ -89,14 +89,36 @@ class EvidenceResult(BaseModel):
     source_id: str
     source_title: str
     source_url: Optional[str] = None
-    content: str
+    content: str = ""
+    text: Optional[str] = None
     relevance_score: float = 0.0
-    retrieval_method: str = "stub"  # bm25 | vector | hybrid | stub
+    score: Optional[float] = None
+    service_id: Optional[str] = None
+    service_code: Optional[str] = None
+    service_name: Optional[str] = None
+    section: Optional[str] = None
+    retrieval_method: str = "hybrid"  # bm25 | vector | hybrid | stub
+    source_confidence: Optional[str] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.content and self.text:
+            self.content = self.text
+        elif not self.text and self.content:
+            self.text = self.content
+        if self.score is None:
+            self.score = self.relevance_score
+        elif self.relevance_score == 0.0 and self.score is not None:
+            self.relevance_score = self.score
 
 
 class EvidenceBundle(BaseModel):
+    query: str = ""
+    intent: Optional[str] = None
     total_retrieved: int = 0
+    confidence: float = 0.0
+    retrieval_method: str = "hybrid"
     results: List[EvidenceResult] = Field(default_factory=list)
+    sources: List[SourceReference] = Field(default_factory=list)
 
 
 class SourceReference(BaseModel):
