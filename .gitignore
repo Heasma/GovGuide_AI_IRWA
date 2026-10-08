@@ -42,11 +42,13 @@ frontend/.env.*
 *.tsbuildinfo
 
 # --- Data ---
+/*.csv
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/raw/Business_Licenses_-_Current_Active_20260819.csv
+
 
 # --- IDE ---
 .vscode/

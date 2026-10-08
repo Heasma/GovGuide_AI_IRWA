@@ -11,16 +11,17 @@ RESPONSIBLE AI PRINCIPLES:
 """
 
 import structlog
-from typing import Optional
+from typing import Optional, Dict, Any, List
 
 from app.config import get_settings
 from app.orchestrator.message_schema import (
     AgentMessage, AgentId, MessageType,
     AdvisoryResultPayload, ConfidenceLabel,
-    EvidenceBundle, NLPAnalysis,
+    EvidenceBundle, NLPAnalysis, Domain,
 )
 from app.agents.advisory_agent.prompt_builder import build_prompt
 from app.agents.advisory_agent.response_validator import validate_response
+from app.nlp.domain_detector import SUPPORTED_DOMAINS, UNSUPPORTED_DOMAINS
 from app.llm.llm_client import BaseLLMClient, get_llm_client
 
 logger = structlog.get_logger(__name__)
@@ -29,6 +30,32 @@ INSUFFICIENT_EVIDENCE_RESPONSE = (
     "I couldn't find a matching government service with sufficient official evidence in the available GovGuide dataset. "
     "Please try using the service name, department, or a more specific question."
 )
+
+DRIVER_LICENSE_RESPONSE = (
+    "I couldn't find relevant information about driver's licences in the current GovGuide AI knowledge base.\n\n"
+    "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+    "Please check the relevant official driver's licensing authority (such as the Illinois Secretary of State / DMV at https://www.ilsos.gov) for current licence class requirements and driving regulations."
+)
+
+AVIATION_LICENSE_RESPONSE = (
+    "I couldn't find relevant information about aviation licensing in the current GovGuide AI knowledge base.\n\n"
+    "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+    "Please consult the Federal Aviation Administration (FAA at https://www.faa.gov) for official pilot and aircraft licensing requirements."
+)
+
+
+def get_unsupported_domain_response(domain: Optional[str]) -> str:
+    domain_str = (domain or "").lower()
+    if domain_str in ("driver_license", "driver license", "driver's license", "driving license"):
+        return DRIVER_LICENSE_RESPONSE
+    if domain_str in ("aviation", "aviation_license", "helicopter", "pilot"):
+        return AVIATION_LICENSE_RESPONSE
+    domain_label = domain_str.replace("_", " ") if domain_str else "this service domain"
+    return (
+        f"I couldn't find relevant information about {domain_label} in the current GovGuide AI knowledge base.\n\n"
+        "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+        "Please consult the relevant official government authority directly for service and licensing requirements."
+    )
 
 
 class AdvisoryAgent:
@@ -60,19 +87,67 @@ class AdvisoryAgent:
         evidence_bundle_data: dict = payload.get("evidence_bundle", {})
         nlp_analysis_data: dict = payload.get("nlp_analysis", {})
 
+        # ── Domain Check ──────────────────────────────────────────────────────
+        domain_val = payload.get("domain")
+        if not domain_val and isinstance(nlp_analysis_data, dict):
+            domain_val = nlp_analysis_data.get("domain")
+        if not domain_val and isinstance(evidence_bundle_data, dict):
+            domain_val = evidence_bundle_data.get("domain")
+
+        is_domain_supported = payload.get("is_domain_supported", True)
+        if isinstance(nlp_analysis_data, dict) and "is_domain_supported" in nlp_analysis_data:
+            is_domain_supported = nlp_analysis_data.get("is_domain_supported", True)
+        if isinstance(evidence_bundle_data, dict) and "domain_supported" in evidence_bundle_data:
+            is_domain_supported = evidence_bundle_data.get("domain_supported", True)
+
+        domain_str = domain_val.value if hasattr(domain_val, "value") else str(domain_val) if domain_val else ""
+
+        is_explicit_unsupported = (
+            (domain_str and domain_str in [d.value for d in UNSUPPORTED_DOMAINS])
+            or (not is_domain_supported and domain_str not in ("", "unknown", "business_license", "government_service"))
+        )
+
+        if is_explicit_unsupported:
+            logger.info(
+                "advisory_agent_unsupported_domain",
+                request_id=message.request_id,
+                domain=domain_str,
+            )
+            safe_msg = get_unsupported_domain_response(domain_str)
+            domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.UNKNOWN
+            result = AdvisoryResultPayload(
+                answer=safe_msg,
+                confidence_score=0.0,
+                confidence_label=ConfidenceLabel.INSUFFICIENT,
+                domain=domain_enum,
+                is_domain_supported=False,
+                sources=[],
+                caveats=[
+                    "The requested domain is not supported by the current City of Chicago business licensing dataset."
+                ],
+                explanation=f"Query belongs to unsupported domain '{domain_str}'. Cross-domain retrieval was prevented.",
+                response_validated=True,
+                fabrication_detected=False,
+            )
+            return self._wrap_result(message, result)
+
         logger.info(
             "advisory_agent_processing",
             request_id=message.request_id,
             sufficient_evidence=sufficient,
             retrieval_confidence=retrieval_confidence,
+            domain=domain_str,
         )
 
         # ── Responsible AI: Insufficient evidence check ───────────────────────
         if not sufficient or retrieval_confidence < self._confidence_threshold:
+            domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
             result = AdvisoryResultPayload(
                 answer=INSUFFICIENT_EVIDENCE_RESPONSE,
                 confidence_score=0.0,
                 confidence_label=ConfidenceLabel.INSUFFICIENT,
+                domain=domain_enum,
+                is_domain_supported=True,
                 sources=[],
                 caveats=[
                     "The available government dataset did not contain a sufficiently relevant service record."
@@ -83,6 +158,25 @@ class AdvisoryAgent:
             )
             return self._wrap_result(message, result)
 
+        # ── Extract Intent ────────────────────────────────────────────────────
+        from app.orchestrator.message_schema import Intent
+        intent_obj = Intent.GENERAL
+        intents_list = []
+        if isinstance(nlp_analysis_data, dict):
+            raw_intent = nlp_analysis_data.get("intent")
+            intents_list = nlp_analysis_data.get("intents", [])
+            if isinstance(raw_intent, Intent):
+                intent_obj = raw_intent
+            elif isinstance(raw_intent, str):
+                try:
+                    intent_obj = Intent(raw_intent)
+                except ValueError:
+                    intent_obj = Intent.GENERAL
+        else:
+            from app.nlp.intent_classifier import classify_intent, classify_intents
+            intent_obj = classify_intent(query)
+            intents_list = classify_intents(query)
+
         # ── Build grounded prompt ─────────────────────────────────────────────
         prompt = build_prompt(
             query=query,
@@ -90,13 +184,31 @@ class AdvisoryAgent:
             nlp_analysis=nlp_analysis_data,
         )
 
-        # ── Call LLM ──────────────────────────────────────────────────────────
-        raw_answer = await self._llm.generate(prompt)
+        # ── Call LLM with seamless fallback ──────────────────────────────────
+        from app.agents.advisory_agent.intent_formatter import (
+            format_intent_response,
+            calibrate_confidence_for_intent,
+        )
+
+        try:
+            raw_answer = await self._llm.generate(prompt)
+        except Exception as exc:
+            logger.warning("llm_call_exception_fallback", error=str(exc))
+            raw_answer = f"[LLM_PROVIDER_ERROR] {str(exc)}"
+
+        is_target_available = True
+        synth_explanation = "Response verified and grounded against official evidence."
 
         # ── Handle LLM provider errors with grounded evidence synthesis ──────
         if self._is_error_output(raw_answer):
             logger.warning("llm_call_fallback_to_evidence_synthesis", raw_output=raw_answer)
-            raw_answer = self._synthesize_from_evidence(query, evidence_bundle_data)
+            raw_answer, is_target_available, synth_explanation = format_intent_response(
+                query, intent_obj, evidence_bundle_data, intents=intents_list
+            )
+        else:
+            if "not currently provide a verified fee" in raw_answer.lower() or "cannot provide a fee" in raw_answer.lower():
+                is_target_available = False
+
 
         # ── Validate response ─────────────────────────────────────────────────
         validation = validate_response(
@@ -104,16 +216,24 @@ class AdvisoryAgent:
             evidence_bundle=evidence_bundle_data,
         )
 
-        # ── Compute confidence label ───────────────────────────────────────────
-        label = self._confidence_label(retrieval_confidence, validation.passed)
+        # ── Compute intent-calibrated confidence label ────────────────────────
+        final_score, label = calibrate_confidence_for_intent(
+            intent=intent_obj,
+            retrieval_confidence=retrieval_confidence,
+            is_target_available=is_target_available,
+            is_validated=validation.passed,
+        )
+        domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
 
         result = AdvisoryResultPayload(
             answer=raw_answer if validation.passed else INSUFFICIENT_EVIDENCE_RESPONSE,
-            confidence_score=round(retrieval_confidence, 3),
+            confidence_score=final_score,
             confidence_label=label,
-            sources=validation.attributed_sources,
+            domain=domain_enum,
+            is_domain_supported=True,
+            sources=validation.attributed_sources if validation.passed else [],
             caveats=validation.caveats,
-            explanation=validation.explanation,
+            explanation=synth_explanation if is_target_available else "Requested target information was not verified in official records.",
             response_validated=validation.passed,
             fabrication_detected=not validation.passed,
         )
@@ -121,6 +241,7 @@ class AdvisoryAgent:
         logger.info(
             "advisory_agent_complete",
             request_id=message.request_id,
+            intent=intent_obj.value if hasattr(intent_obj, "value") else str(intent_obj),
             confidence_label=label,
             validated=validation.passed,
         )
@@ -158,47 +279,26 @@ class AdvisoryAgent:
             "[LLM_TIMEOUT]",
             "[LLM_INVALID_RESPONSE]",
             "[ERROR]",
+            "error code: 429",
+            "credit_balance_exhausted",
+            "insufficient_quota",
         ]
-        return any(answer.strip().startswith(prefix) for prefix in error_prefixes)
+        lower = answer.lower()
+        return any(prefix.lower() in lower for prefix in error_prefixes)
 
-    def _synthesize_from_evidence(self, query: str, evidence_bundle: dict) -> str:
+
+    def _synthesize_from_evidence(self, query: str, evidence_bundle: dict, intent: Optional[Any] = None) -> str:
         """
-        Synthesizes a structured, grounded answer directly from retrieved Chicago database evidence
+        Synthesizes an intent-driven structured answer directly from retrieved Chicago database evidence
         when the external LLM provider is unavailable, rate-limited, or unconfigured.
         """
-        results = evidence_bundle.get("results", [])
-        if not results:
-            return INSUFFICIENT_EVIDENCE_RESPONSE
-
-        lines = [
-            "Based on official City of Chicago business licensing records, here is the guidance for your inquiry:\n"
-        ]
-
-        top_results = results[:3]
-        for i, item in enumerate(top_results, start=1):
-            title = item.get("source_title") or f"Service {item.get('service_code', '')}"
-            code = item.get("service_code")
-            content = item.get("text") or item.get("content", "")
-            url = item.get("source_url") or "https://www.chicago.gov/BusinessDirect"
-
-            code_badge = f" (License Code: {code})" if code and code != "N/A" else ""
-            lines.append(f"### {i}. {title}{code_badge}")
-
-            if content:
-                clean_content = content.strip()
-                if len(clean_content) > 350:
-                    clean_content = clean_content[:350].rsplit(".", 1)[0] + "."
-                lines.append(clean_content)
-
-            lines.append(f"Official Portal: {url} [Source {i}]\n")
-
-        lines.append(
-            "**Key Application Steps:**\n"
-            "1. Determine your specific business activity and required municipal license category.\n"
-            "2. Complete zoning review and resolve any outstanding City of Chicago debt.\n"
-            "3. Submit your application online via Chicago Business Direct or at City Hall (Small Business Center, 121 N. LaSalle St., Room 800).\n"
-            "4. Complete required inspections (Health, Fire, Buildings) and pay applicable licensing fees."
-        )
-
-        return "\n\n".join(lines)
+        from app.agents.advisory_agent.intent_formatter import format_intent_response
+        intent_obj = intent or Intent.GENERAL
+        if isinstance(intent_obj, str):
+            try:
+                intent_obj = Intent(intent_obj)
+            except ValueError:
+                intent_obj = Intent.GENERAL
+        answer, _, _ = format_intent_response(query, intent_obj, evidence_bundle)
+        return answer
 

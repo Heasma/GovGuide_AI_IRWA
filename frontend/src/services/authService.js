@@ -27,4 +27,14 @@ export const queryService = {
     const { data } = await api.post(`/query/${requestId}/feedback`, { rating, comment })
     return data
   },
+  getAgentStatus: async () => {
+    const { data } = await api.get('/agents/status')
+    return data
+  },
+  runAgentPipeline: async (queryText, sessionId) => {
+    const { data } = await api.post('/agents/pipeline', null, {
+      params: { query_text: queryText, session_id: sessionId },
+    })
+    return data
+  },
 }

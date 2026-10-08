@@ -145,6 +145,7 @@ function AssistantMessage({ message, onRetry, loading }) {
   }
 
   const data = message.data
+  const isConversational = data?.is_conversational === true || (!data?.confidence_label && (!data?.sources || data.sources.length === 0) && (!data?.caveats || data.caveats.length === 0))
 
   return (
     <div className="msg-row msg-row--assistant fade-in" role="article" aria-label="GovGuide AI response">
@@ -154,7 +155,7 @@ function AssistantMessage({ message, onRetry, loading }) {
 
       <div className="ai-response-card">
         {/* Demo Mode Badge */}
-        {data?.is_demo === true && (
+        {!isConversational && data?.is_demo === true && (
           <div className="demo-mode-badge" role="status">
             <Sparkles size={11} aria-hidden="true" />
             Demo Mode
@@ -166,31 +167,36 @@ function AssistantMessage({ message, onRetry, loading }) {
           {data?.answer || message.content}
         </div>
 
-        {/* Confidence + Explanation (ONLY on successful valid answers) */}
-        {data?.confidence_label && (
-          <div className="ai-response-confidence">
-            <ConfidenceBadge confidenceLabel={data.confidence_label} />
-            {data?.explanation && (
-              <p className="explanation-text">
-                <Info size={12} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>{data.explanation}</span>
-              </p>
+        {/* ONLY show metadata for substantive government responses */}
+        {!isConversational && (
+          <>
+            {/* Confidence + Explanation (ONLY on successful valid answers) */}
+            {data?.confidence_label && (
+              <div className="ai-response-confidence">
+                <ConfidenceBadge confidenceLabel={data.confidence_label} />
+                {data?.explanation && (
+                  <p className="explanation-text">
+                    <Info size={12} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>{data.explanation}</span>
+                  </p>
+                )}
+              </div>
             )}
-          </div>
+
+            {/* Caveats */}
+            <CaveatCard caveats={data?.caveats} />
+
+            {/* Official Sources */}
+            <SourcesSection sources={data?.sources} />
+
+            {/* Responsible AI Footer (per-response) */}
+            <div className="responsible-ai-footer" role="note">
+              GovGuide AI provides guidance based on available official information. Always verify
+              important requirements, fees, deadlines, and legal information with the responsible
+              government authority.
+            </div>
+          </>
         )}
-
-        {/* Caveats */}
-        <CaveatCard caveats={data?.caveats} />
-
-        {/* Official Sources */}
-        <SourcesSection sources={data?.sources} />
-
-        {/* Responsible AI Footer (per-response) */}
-        <div className="responsible-ai-footer" role="note">
-          GovGuide AI provides guidance based on available official information. Always verify
-          important requirements, fees, deadlines, and legal information with the responsible
-          government authority.
-        </div>
       </div>
     </div>
   )

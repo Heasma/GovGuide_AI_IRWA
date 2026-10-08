@@ -65,14 +65,49 @@ class ResearchAgent:
 
         # ── NLP Pipeline ──────────────────────────────────────────────────────
         clean_query = self._preprocess(query)
-        intent = self._classify_intent(clean_query)
+        from app.nlp.intent_classifier import classify_intents
+        classified_intents = classify_intents(clean_query)
+        intent = classified_intents[0]
+        from app.nlp.domain_detector import classify_domain, is_domain_supported, UNSUPPORTED_DOMAINS
+        domain = classify_domain(clean_query)
+        is_supported = is_domain_supported(domain)
 
         nlp_analysis = NLPAnalysis(
             intent=intent,
+            intents=classified_intents,
+            domain=domain,
+            is_domain_supported=is_supported,
             entities=[],       # Entity extraction
             expanded_query=clean_query,
             keywords=[],
         )
+
+        # ── Domain Gating ─────────────────────────────────────────────────────
+        if domain in UNSUPPORTED_DOMAINS:
+            evidence_bundle = EvidenceBundle(
+                query=clean_query,
+                intent=intent.value if hasattr(intent, "value") else str(intent),
+                domain=domain.value if hasattr(domain, "value") else str(domain),
+                domain_supported=False,
+                total_retrieved=0,
+                confidence=0.0,
+                results=[],
+                sources=[],
+            )
+            result_payload = ResearchResultPayload(
+                nlp_analysis=nlp_analysis,
+                evidence_bundle=evidence_bundle,
+                retrieval_confidence=0.0,
+                sufficient_evidence=False,
+            )
+            return AgentMessage(
+                request_id=message.request_id,
+                correlation_id=message.correlation_id,
+                sender=self.AGENT_ID,
+                recipient=AgentId.ORCHESTRATOR,
+                message_type=MessageType.RESULT,
+                payload=result_payload.model_dump(),
+            )
 
         # ── Information Retrieval ─────────────────────────────────────────────
         top_k = retrieval_config.get("top_k", 10)
@@ -80,6 +115,8 @@ class ResearchAgent:
             query=clean_query,
             top_k=top_k,
         )
+        evidence_bundle.domain = domain.value if hasattr(domain, "value") else str(domain)
+        evidence_bundle.domain_supported = True
 
         # ── Confidence Assessment ─────────────────────────────────────────────
         retrieval_confidence = self._compute_confidence(evidence_bundle)

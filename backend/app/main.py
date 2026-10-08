@@ -16,7 +16,9 @@ from app.controllers import (
     session_router,
     admin_router,
     health_router,
+    agent_router,
 )
+from app.middleware.rate_limiter import RateLimitMiddleware
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
 structlog.configure(
@@ -46,14 +48,17 @@ def create_app() -> FastAPI:
         description=(
             "An Agentic AI-Based Government Service Discovery, "
             "Eligibility and Information Retrieval Platform.\n\n"
-            "**Note:** Government dataset integration is pending. "
-            "Service endpoints currently return placeholder responses."
+            "Features multi-agent query orchestration, hybrid retrieval (BM25 + Semantic + RRF), "
+            "Responsible AI grounding validation, and secure agent communication protocols."
         ),
-        version="0.1.0",
+        version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    application.add_middleware(RateLimitMiddleware)
 
     # ── CORS ─────────────────────────────────────────────────────────────────
     application.add_middleware(
@@ -69,6 +74,7 @@ def create_app() -> FastAPI:
     application.include_router(health_router, prefix=prefix, tags=["Health"])
     application.include_router(auth_router, prefix=prefix, tags=["Authentication"])
     application.include_router(query_router, prefix=prefix, tags=["AI Query"])
+    application.include_router(agent_router, prefix=prefix, tags=["Agent Communication Protocol"])
     application.include_router(service_router, prefix=prefix, tags=["Services"])
     application.include_router(session_router, prefix=prefix, tags=["Sessions"])
     application.include_router(admin_router, prefix=prefix, tags=["Admin"])

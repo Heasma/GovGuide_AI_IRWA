@@ -51,7 +51,7 @@ class QueryService:
         logger.info("query_received", request_id=request_id, user_id=user_id, session_id=session_id)
 
         # ── Step 1: Session & Follow-up Context Resolution ────────────────────
-        enriched_query = query
+        context_entity = None
         session_uuid = None
         user_uuid = None
 
@@ -67,8 +67,12 @@ class QueryService:
             except (ValueError, TypeError):
                 user_uuid = None
 
-        # Check for prior session messages to resolve follow-ups if real DB session is present
-        if db and session_uuid:
+        # Check for prior session messages to resolve follow-up entity context
+        from app.security.prompt_injection_guard import classify_security_query
+        from app.orchestrator.message_schema import SecurityClassification
+
+        sec_check = classify_security_query(query)
+        if sec_check.classification == SecurityClassification.NORMAL and db and session_uuid:
             try:
                 sess_query = await db.execute(select(QuerySession).where(QuerySession.id == session_uuid))
                 if hasattr(sess_query, "scalar_one_or_none"):
@@ -86,28 +90,32 @@ class QueryService:
                             select(ConversationMessage)
                             .where(ConversationMessage.session_id == session_uuid)
                             .order_by(ConversationMessage.created_at.desc())
-                            .limit(4)
+                            .limit(6)
                         )
                         if hasattr(msg_query, "scalars"):
                             recent_msgs = list(msg_query.scalars().all())
-                            if recent_msgs and (_FOLLOW_UP_PATTERN.search(query) or len(query.split()) <= 4):
-                                context_snippets = [
-                                    m.content for m in reversed(recent_msgs) if m.role == "user"
-                                ]
-                                if context_snippets:
-                                    enriched_query = f"{' '.join(context_snippets[-2:])} {query}"
-                                    logger.info("follow_up_query_enriched", original=query, enriched=enriched_query)
+                            if recent_msgs:
+                                from app.nlp.entity_extractor import resolve_conversation_context
+                                context_entity = resolve_conversation_context(query, recent_msgs)
+                                if context_entity:
+                                    logger.info(
+                                        "conversation_entity_context_resolved",
+                                        query=query,
+                                        resolved_entity=context_entity,
+                                    )
             except Exception as exc:
                 logger.warning("session_context_resolution_failed", error=str(exc))
 
         # ── Step 2: Orchestration (Database Retrieval + Grounded Answer) ──────
         orchestrator = Orchestrator()
         result = await orchestrator.process_query(
-            query=enriched_query,
+            query=query,
             request_id=request_id,
             session_id=session_id,
             user_id=user_id,
+            context_entity=context_entity,
         )
+
 
         # ── Step 3: Persist Conversation Messages in Database ────────────────
         if db and session_uuid:

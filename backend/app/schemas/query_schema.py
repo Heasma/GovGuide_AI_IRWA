@@ -31,12 +31,13 @@ class QueryResponse(BaseModel):
     """The complete response from the AI query pipeline."""
     request_id: str
     answer: str
-    confidence_score: float
-    confidence_label: str   # high | medium | low | insufficient
+    confidence_score: float = 0.0
+    confidence_label: Optional[str] = None   # high | medium | low | insufficient
     sources: List[SourceReference] = []
     caveats: List[str] = []
     explanation: Optional[str] = None
     is_demo: bool = False   # True when returning stub/mock data
+    is_conversational: bool = False
 
 
 class FeedbackRequest(BaseModel):

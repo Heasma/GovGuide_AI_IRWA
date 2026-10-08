@@ -18,6 +18,12 @@ from pydantic import BaseModel, Field, field_validator
 
 class AgentId(str, Enum):
     ORCHESTRATOR = "orchestrator"
+    QUERY_AGENT = "query_agent"
+    QUERY_UNDERSTANDING_AGENT = "query_understanding_agent"
+    RETRIEVAL_AGENT = "retrieval_agent"
+    RESPONSE_AGENT = "response_agent"
+    RESPONSE_VERIFICATION_AGENT = "response_verification_agent"
+    # Legacy / alias identifiers for backward compatibility
     RESEARCH_AGENT = "research_agent"
     ADVISORY_AGENT = "advisory_agent"
 
@@ -30,15 +36,46 @@ class MessageType(str, Enum):
 
 
 class TaskType(str, Enum):
+    QUERY_UNDERSTANDING = "query_understanding"
     INFORMATION_RETRIEVAL = "information_retrieval"
     RESPONSE_GENERATION = "response_generation"
+    VERIFICATION = "verification"
 
 
 class Intent(str, Enum):
     SERVICE_LOOKUP = "service_lookup"
+    SERVICE_INFORMATION = "service_information"
+    LICENSE_IDENTIFICATION = "license_identification"
     ELIGIBILITY = "eligibility"
+    GEOGRAPHIC_ELIGIBILITY = "geographic_eligibility"
     PROCEDURE = "procedure"
+    APPLICATION_PROCEDURE = "application_procedure"
+    REQUIRED_DOCUMENTS = "required_documents"
+    FEES = "fees"
+    RENEWAL = "renewal"
+    OFFICE_INFORMATION = "office_information"
+    COMPARISON = "comparison"
+    SOURCE_EVIDENCE = "source_evidence"
+    CONVERSATIONAL = "conversational"
+    GREETING = "greeting"
+    THANKS = "thanks"
+    ACKNOWLEDGEMENT = "acknowledgement"
+    GOODBYE = "goodbye"
     GENERAL = "general"
+    UNKNOWN = "unknown"
+
+
+
+class Domain(str, Enum):
+    BUSINESS_LICENSE = "business_license"
+    GOVERNMENT_SERVICE = "government_service"
+    DRIVER_LICENSE = "driver_license"
+    VEHICLE_REGISTRATION = "vehicle_registration"
+    AVIATION = "aviation"
+    TAX = "tax"
+    HEALTH = "health"
+    EDUCATION = "education"
+    OTHER = "other"
     UNKNOWN = "unknown"
 
 
@@ -56,6 +93,26 @@ class ErrorCode(str, Enum):
     INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"
     INJECTION_DETECTED = "INJECTION_DETECTED"
     AGENT_TIMEOUT = "AGENT_TIMEOUT"
+    UNSUPPORTED_DOMAIN = "UNSUPPORTED_DOMAIN"
+    INVALID_PAYLOAD = "INVALID_PAYLOAD"
+
+
+class SecurityClassification(str, Enum):
+    NORMAL = "NORMAL"
+    SYSTEM_PROMPT_EXTRACTION = "SYSTEM_PROMPT_EXTRACTION"
+    INSTRUCTION_OVERRIDE = "INSTRUCTION_OVERRIDE"
+    FAKE_SYSTEM_MESSAGE = "FAKE_SYSTEM_MESSAGE"
+    ROLEPLAY_JAILBREAK = "ROLEPLAY_JAILBREAK"
+    DEVELOPER_MODE = "DEVELOPER_MODE"
+    AUTHORITY_BYPASS = "AUTHORITY_BYPASS"
+    INTERNAL_METADATA_EXTRACTION = "INTERNAL_METADATA_EXTRACTION"
+    RAG_INJECTION = "RAG_INJECTION"
+    SECURITY_POLICY_EXTRACTION = "SECURITY_POLICY_EXTRACTION"
+
+
+class SecurityAction(str, Enum):
+    ALLOW = "ALLOW"
+    BLOCK_AND_SAFE_RESPOND = "BLOCK_AND_SAFE_RESPOND"
 
 
 # ── Sub-models ────────────────────────────────────────────────────────────────
@@ -64,24 +121,33 @@ class RetrievalConfig(BaseModel):
     mode: str = "hybrid"          # bm25 | vector | hybrid
     top_k: int = 10
     filters: Dict[str, Any] = Field(default_factory=dict)
+    domain_filter: Optional[str] = None
 
 
 class NLPConfig(BaseModel):
     run_ner: bool = True
     run_query_expansion: bool = True
+    detect_domain: bool = True
 
 
 class EntityExtraction(BaseModel):
     text: str
     label: str
     confidence: float = 0.0
+    start_char: Optional[int] = None
+    end_char: Optional[int] = None
 
 
 class NLPAnalysis(BaseModel):
     intent: Intent = Intent.UNKNOWN
+    intents: List[Intent] = Field(default_factory=list)
+    domain: Domain = Domain.UNKNOWN
+    is_domain_supported: bool = True
     entities: List[EntityExtraction] = Field(default_factory=list)
     expanded_query: str = ""
     keywords: List[str] = Field(default_factory=list)
+    is_safe: bool = True
+    confidence: float = 1.0
 
 
 class EvidenceResult(BaseModel):
@@ -97,6 +163,7 @@ class EvidenceResult(BaseModel):
     service_code: Optional[str] = None
     service_name: Optional[str] = None
     section: Optional[str] = None
+    domain: str = "business_license"
     retrieval_method: str = "hybrid"  # bm25 | vector | hybrid | stub
     source_confidence: Optional[str] = None
 
@@ -111,21 +178,24 @@ class EvidenceResult(BaseModel):
             self.relevance_score = self.score
 
 
-class EvidenceBundle(BaseModel):
-    query: str = ""
-    intent: Optional[str] = None
-    total_retrieved: int = 0
-    confidence: float = 0.0
-    retrieval_method: str = "hybrid"
-    results: List[EvidenceResult] = Field(default_factory=list)
-    sources: List[SourceReference] = Field(default_factory=list)
-
-
 class SourceReference(BaseModel):
     source_id: str
     title: str
     url: Optional[str] = None
     excerpt: Optional[str] = None
+
+
+class EvidenceBundle(BaseModel):
+    query: str = ""
+    intent: Optional[str] = None
+    intents: List[str] = Field(default_factory=list)
+    domain: Optional[str] = None
+    domain_supported: bool = True
+    total_retrieved: int = 0
+    confidence: float = 0.0
+    retrieval_method: str = "hybrid"
+    results: List[EvidenceResult] = Field(default_factory=list)
+    sources: List[SourceReference] = Field(default_factory=list)
 
 
 class GenerationConfig(BaseModel):
@@ -137,6 +207,82 @@ class GenerationConfig(BaseModel):
 
 # ── Task Payloads ─────────────────────────────────────────────────────────────
 
+# Agent 1: Query Understanding Agent Payloads
+class QueryUnderstandingTaskPayload(BaseModel):
+    """Payload sent to Query Understanding Agent."""
+    task_type: TaskType = TaskType.QUERY_UNDERSTANDING
+    raw_query: str
+    session_id: Optional[str] = None
+    context_entity: Optional[str] = None
+    nlp_config: NLPConfig = Field(default_factory=NLPConfig)
+
+
+
+class StructuredQueryPayload(BaseModel):
+    """Payload produced by Query Understanding Agent."""
+    task_type: TaskType = TaskType.QUERY_UNDERSTANDING
+    original_query: str
+    cleaned_query: str
+    expanded_query: str
+    intent: Intent = Intent.UNKNOWN
+    intents: List[Intent] = Field(default_factory=list)
+    domain: Domain = Domain.UNKNOWN
+    is_domain_supported: bool = True
+    entities: List[EntityExtraction] = Field(default_factory=list)
+    keywords: List[str] = Field(default_factory=list)
+    is_safe: bool = True
+    is_ambiguous: bool = False
+    search_parameters: Dict[str, Any] = Field(default_factory=dict)
+
+
+# Agent 2: Retrieval Agent Payloads
+class RetrievalTaskPayload(BaseModel):
+    """Payload sent to Retrieval Agent."""
+    task_type: TaskType = TaskType.INFORMATION_RETRIEVAL
+    structured_query: StructuredQueryPayload
+    retrieval_config: RetrievalConfig = Field(default_factory=RetrievalConfig)
+
+
+class RetrievalResultPayload(BaseModel):
+    """Payload returned by Retrieval Agent."""
+    task_type: TaskType = TaskType.INFORMATION_RETRIEVAL
+    evidence_bundle: EvidenceBundle = Field(default_factory=EvidenceBundle)
+    retrieval_confidence: float = 0.0
+    sufficient_evidence: bool = False
+    domain: Optional[Domain] = None
+    is_domain_supported: bool = True
+
+
+# Agent 3: Response / Verification Agent Payloads
+class ResponseTaskPayload(BaseModel):
+    """Payload sent to Response / Verification Agent."""
+    task_type: TaskType = TaskType.RESPONSE_GENERATION
+    user_query: str
+    structured_query: Optional[StructuredQueryPayload] = None
+    domain: Optional[Domain] = None
+    is_domain_supported: bool = True
+    evidence_bundle: EvidenceBundle
+    retrieval_confidence: float
+    sufficient_evidence: bool
+    generation_config: GenerationConfig = Field(default_factory=GenerationConfig)
+
+
+class ResponseResultPayload(BaseModel):
+    """Payload returned by Response / Verification Agent."""
+    task_type: TaskType = TaskType.RESPONSE_GENERATION
+    answer: str
+    confidence_score: float = 0.0
+    confidence_label: ConfidenceLabel = ConfidenceLabel.INSUFFICIENT
+    domain: Optional[Domain] = None
+    is_domain_supported: bool = True
+    sources: List[SourceReference] = Field(default_factory=list)
+    caveats: List[str] = Field(default_factory=list)
+    explanation: Optional[str] = None
+    response_validated: bool = False
+    fabrication_detected: bool = False
+
+
+# Legacy payloads for backward compatibility with existing tests
 class ResearchTaskPayload(BaseModel):
     """Payload sent by Orchestrator → Research Agent."""
     task_type: TaskType = TaskType.INFORMATION_RETRIEVAL
@@ -163,6 +309,8 @@ class AdvisoryTaskPayload(BaseModel):
     evidence_bundle: EvidenceBundle
     retrieval_confidence: float
     sufficient_evidence: bool
+    domain: Optional[Domain] = None
+    is_domain_supported: bool = True
     generation_config: GenerationConfig = Field(default_factory=GenerationConfig)
 
 
@@ -172,6 +320,8 @@ class AdvisoryResultPayload(BaseModel):
     answer: str
     confidence_score: float = 0.0
     confidence_label: ConfidenceLabel = ConfidenceLabel.INSUFFICIENT
+    domain: Optional[Domain] = None
+    is_domain_supported: bool = True
     sources: List[SourceReference] = Field(default_factory=list)
     caveats: List[str] = Field(default_factory=list)
     explanation: Optional[str] = None

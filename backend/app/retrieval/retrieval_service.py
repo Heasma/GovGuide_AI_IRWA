@@ -114,8 +114,10 @@ class RetrievalService:
         k = top_k or self.top_k
         clean_query = preprocess(query)
         expanded = expand_query(clean_query)
-        norm_query = normalize_for_retrieval(expanded)
-        intent = classify_intent(clean_query).value
+        from app.nlp.intent_classifier import classify_intent, classify_intents
+        classified_intents = classify_intents(clean_query)
+        intent = classified_intents[0].value if hasattr(classified_intents[0], "value") else str(classified_intents[0])
+        intents_list = [i.value if hasattr(i, "value") else str(i) for i in classified_intents]
 
         if not self.is_indexed:
             self._try_load_db()
@@ -124,6 +126,7 @@ class RetrievalService:
             return EvidenceBundle(
                 query=query,
                 intent=intent,
+                intents=intents_list,
                 total_retrieved=0,
                 confidence=0.0,
                 retrieval_method=mode or "hybrid",
@@ -208,14 +211,14 @@ class RetrievalService:
             if retrieval_mode == "hybrid" and isinstance(top_res, HybridResult):
                 bm25_s = top_res.bm25_score
                 sem_s = top_res.semantic_score
-                if bm25_s < 1.5:
-                    # Insufficient lexical overlap across corpus -> Out-of-domain match
-                    confidence = round(min(0.12, sem_s * 0.15), 3)
+                if sem_s < 0.15 or bm25_s < 1.5:
+                    # Insufficient semantic agreement or lexical overlap -> Out-of-domain / irrelevant match
+                    confidence = round(min(0.12, max(0.02, sem_s * 0.2)), 3)
                 elif bm25_s >= 3.0 and sem_s >= 0.20:
                     # Strong multi-modal agreement
                     confidence = round(min(1.0, 0.6 + (top_score / 0.0328) * 0.38), 3)
-                elif bm25_s >= 1.5:
-                    # Moderate lexical match
+                elif bm25_s >= 1.5 and sem_s >= 0.15:
+                    # Moderate lexical and semantic match
                     confidence = round(min(0.85, 0.4 + (bm25_s / 10.0) * 0.4), 3)
                 else:
                     confidence = round(min(0.14, max(0.05, sem_s * 0.1)), 3)
@@ -227,6 +230,7 @@ class RetrievalService:
         return EvidenceBundle(
             query=query,
             intent=intent,
+            intents=intents_list,
             total_retrieved=len(evidence_results),
             confidence=confidence,
             retrieval_method=retrieval_mode,

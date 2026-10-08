@@ -35,6 +35,15 @@ class FailureHandler:
                 request_id=message.request_id,
                 error=str(exc),
             )
+            
+            error_code = ErrorCode.RETRIEVAL_FAILED
+            if agent_id in (AgentId.QUERY_AGENT, AgentId.QUERY_UNDERSTANDING_AGENT):
+                error_code = ErrorCode.VALIDATION_FAILED
+            elif agent_id in (AgentId.RETRIEVAL_AGENT, AgentId.RESEARCH_AGENT):
+                error_code = ErrorCode.RETRIEVAL_FAILED
+            elif agent_id in (AgentId.RESPONSE_AGENT, AgentId.RESPONSE_VERIFICATION_AGENT, AgentId.ADVISORY_AGENT):
+                error_code = ErrorCode.LLM_UNAVAILABLE
+
             return AgentMessage(
                 request_id=message.request_id,
                 correlation_id=message.correlation_id,
@@ -42,9 +51,7 @@ class FailureHandler:
                 recipient=AgentId.ORCHESTRATOR,
                 message_type=MessageType.ERROR,
                 payload=ErrorPayload(
-                    error_code=ErrorCode.RETRIEVAL_FAILED
-                    if agent_id == AgentId.RESEARCH_AGENT
-                    else ErrorCode.LLM_UNAVAILABLE,
+                    error_code=error_code,
                     error_message=str(exc),
                     recoverable=False,
                 ).model_dump(),

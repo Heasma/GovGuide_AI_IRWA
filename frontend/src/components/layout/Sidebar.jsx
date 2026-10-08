@@ -23,6 +23,7 @@ import {
   MessageSquare,
   DatabaseZap,
   Activity,
+  Briefcase,
   LogOut,
   ChevronDown,
   ChevronRight,
@@ -347,6 +348,39 @@ export default function Sidebar() {
             </div>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.12)', padding: '2px 6px', borderRadius: 4 }}>
               Active
+            </span>
+          </NavLink>
+        </div>
+
+        {/* ── BUSINESS ──────────────────────────────────────── */}
+        <div className="nav-section" style={{ marginBottom: 20 }}>
+          <div className="nav-section-label">BUSINESS</div>
+
+          <NavLink
+            to="/commercialization"
+            className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+            style={({ isActive }) => ({
+              color: isActive ? '#ffffff' : '#94a3b8',
+              background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              padding: '9px 16px',
+              margin: '2px 8px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 14,
+              fontWeight: 500,
+              textDecoration: 'none',
+              transition: 'background 0.15s ease, color 0.15s ease',
+            })}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Briefcase size={16} />
+              <span>Commercialization</span>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#818cf8', background: 'rgba(99, 102, 241, 0.14)', padding: '2px 6px', borderRadius: 4 }}>
+              Strategy
             </span>
           </NavLink>
         </div>

@@ -13,6 +13,7 @@ import ConversationsPage from './pages/ConversationsPage'
 import SearchHistoryPage from './pages/SearchHistoryPage'
 import DatasetStatusPage from './pages/DatasetStatusPage'
 import PipelineStatusPage from './pages/PipelineStatusPage'
+import CommercializationPage from './pages/CommercializationPage'
 import PageLayout from './components/layout/PageLayout'
 
 function ProtectedRoute({ children }) {
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="dataset-status" element={<DatasetStatusPage />} />
             <Route path="pipeline" element={<PipelineStatusPage />} />
             <Route path="pipeline-status" element={<PipelineStatusPage />} />
+            <Route path="commercialization" element={<CommercializationPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
