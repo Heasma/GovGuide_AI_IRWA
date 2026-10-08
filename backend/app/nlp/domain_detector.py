@@ -105,12 +105,14 @@ _BUSINESS_LICENSE_PATTERNS = [
     r"\b(open\s+a\s+(business|shop|store|company)|start\s+a\s+(business|company))\b",
     r"\b(bacp|small\s+business\s+center|business\s+affairs)\b",
     r"\b(1006|1010|1011|1002|1004|1005|1012|1014|1016|1020|1030|1050)\b",
+    r"\b(license\s+services?|all\s+licenses?|all\s+business\s+licenses?|business\s+license\s+types?)\b",
 ]
 
 _GOVERNMENT_SERVICE_PATTERNS = [
     r"\b(city\s+hall|small\s+business\s+center|121\s+n\s+lasalle|room\s+800)\b",
     r"\b(311\s+service|311|city\s+clerk|zoning\s+department|building\s+inspection)\b",
     r"\b(chicago\s+department|municipal\s+office)\b",
+    r"\b(government\s+services?|city\s+services?|municipal\s+services?|56\s+services?|services?\s+summary|all\s+services|show\s+all\s+services|all\s+56\s+services)\b",
 ]
 
 

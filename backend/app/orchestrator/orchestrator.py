@@ -60,7 +60,7 @@ class Orchestrator:
     async def process_query(
         self,
         query: str,
-        request_id: str,
+        request_id: Optional[str] = None,
         session_id: Optional[str] = None,
         user_id: Optional[str] = None,
         context_entity: Optional[str] = None,
@@ -68,6 +68,7 @@ class Orchestrator:
         """
         Executes the full 3-agent pipeline and returns a QueryResponse for the API / UI layer.
         """
+        request_id = request_id or str(uuid.uuid4())
         log = logger.bind(request_id=request_id, user_id=user_id)
         correlation_id = str(uuid.uuid4())
 
@@ -117,6 +118,23 @@ class Orchestrator:
             knowledge_base_domain_supported=structured_query.is_domain_supported,
         )
 
+        # ── Step 2a: Unknown Service Fast-path ───────────────────────────────
+        if structured_query.search_parameters.get("is_unknown_service", False):
+            unknown_name = structured_query.search_parameters.get("unknown_service_name") or "the requested service"
+            unknown_answer = f"I couldn't find a matching verified government service for '{unknown_name}' in the current knowledge base. Please provide the service name or license code."
+            log.info("unknown_service_response_dispatched", unknown_service_name=unknown_name)
+            return QueryResponse(
+                request_id=request_id,
+                answer=unknown_answer,
+                confidence_score=0.0,
+                confidence_label=ConfidenceLabel.INSUFFICIENT,
+                sources=[],
+                caveats=["Unknown government service requested."],
+                explanation=f"No matching canonical GovernmentService record found for '{unknown_name}'.",
+                is_demo=False,
+                is_conversational=False,
+            )
+
         # ── Step 2b: Ambiguous Query Clarification Fast-path ───────────────────
         if structured_query.search_parameters.get("needs_clarification", False):
             detected_lang = structured_query.search_parameters.get("detected_language", "en")
@@ -144,7 +162,8 @@ class Orchestrator:
             Intent.SERVICE_LOOKUP, Intent.SERVICE_INFORMATION, Intent.LICENSE_IDENTIFICATION,
             Intent.ELIGIBILITY, Intent.GEOGRAPHIC_ELIGIBILITY, Intent.PROCEDURE,
             Intent.APPLICATION_PROCEDURE, Intent.REQUIRED_DOCUMENTS, Intent.FEES,
-            Intent.RENEWAL, Intent.OFFICE_INFORMATION, Intent.COMPARISON, Intent.SOURCE_EVIDENCE
+            Intent.RENEWAL, Intent.OFFICE_INFORMATION, Intent.COMPARISON, Intent.SOURCE_EVIDENCE,
+            Intent.LICENSE_CATALOG,
         )
 
         is_conversational_intent = (

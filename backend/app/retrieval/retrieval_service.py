@@ -188,105 +188,180 @@ class RetrievalService:
         settings = get_settings()
         retrieval_mode = (mode or settings.RETRIEVAL_MODE).lower()
 
-        # Execute search based on mode
-        raw_candidates = []
-        if retrieval_mode == "bm25":
-            norm_query = normalize_for_retrieval(expanded)
-            bm25_res = self.bm25_retriever.search(norm_query, top_k=k)
-            for r in bm25_res:
-                raw_candidates.append(r)
-        elif retrieval_mode == "semantic":
-            sem_res = self.semantic_retriever.search(expanded, top_k=k)
-            for r in sem_res:
-                raw_candidates.append(r)
-        else:  # hybrid (default)
-            retrieval_mode = "hybrid"
-            hybrid_res = self.hybrid_retriever.search(
-                expanded,
-                top_k=k,
-                intent=detected_intent,
-                target_service=target_service,
-            )
-            for r in hybrid_res:
-                raw_candidates.append(r)
+        # ── Canonical Service Identification & Service-Scoped Gating ──────────
+        from app.nlp.service_resolver import get_service_resolver
+        resolver = get_service_resolver()
+        resolved_service_code = None
+        resolved_service_name = None
+        if target_service:
+            resolved_service_code, resolved_service_name, _ = resolver.resolve(target_service)
+        if not resolved_service_code:
+            resolved_service_code, resolved_service_name, _ = resolver.resolve(clean_query)
+        if not resolved_service_code:
+            resolved_service_code, resolved_service_name, _ = resolver.resolve(query)
 
-        # ── Source Attribution Validation ─────────────────────────────────────
-        attributed_candidates = filter_attributed_results(raw_candidates)
+        is_catalog_query = (
+            intent_val == "license_catalog"
+            or (hasattr(detected_intent, "value") and detected_intent.value == "license_catalog")
+            or "license_catalog" in intents_list
+        )
 
-        # ── Evidence Relevance Validation: Activity Compatibility & Distinguishing Terms ─────
-        from app.nlp.activity_extractor import extract_business_activity, BusinessActivityType
-        activity = extract_business_activity(clean_query)
+        if resolved_service_code and not is_catalog_query:
+            # Service identity strictly prioritizes over generic BM25/semantic score
+            # Restrict candidates ONLY to chunks belonging to the identified service_code
+            service_chunks = [
+                c for c in self._chunks
+                if str(getattr(c, "service_code", "")).strip().lower() == resolved_service_code.strip().lower()
+            ]
 
-        # 1. Reject everything if query contains an unrecognized token
-        if activity.activity_type == BusinessActivityType.UNRECOGNIZED_TOKEN:
-            logger.info("retrieval_service_unrecognized_token_rejected", token=activity.extracted_text)
-            attributed_candidates = []
+            # Order chunks: put the requested intent section first, followed by others
+            intent_section_priority = {
+                "fees": ["fees", "overview"],
+                "required_documents": ["required_documents", "overview"],
+                "eligibility": ["eligibility", "overview"],
+                "application_procedure": ["application_procedure", "overview"],
+                "procedure": ["application_procedure", "overview"],
+                "renewal": ["renewal", "overview"],
+                "office_information": ["contact_information", "responsible_office"],
+                "service_lookup": ["overview", "eligibility"],
+                "service_information": ["overview", "eligibility"],
+            }
+            pref_sections = intent_section_priority.get(intent_val, ["overview"])
 
-        # 2. Activity domain compatibility filtering
-        if attributed_candidates:
-            # If the user query is explicitly non-food (tailoring, clothing, electronics, generic retail),
-            # reject Retail Food Establishment (1006) and other food licenses.
-            if not activity.is_food_related and activity.activity_type not in (BusinessActivityType.NONE, BusinessActivityType.GENERIC_BUSINESS):
-                compatible_candidates = []
-                for c in attributed_candidates:
-                    srv_name = (getattr(c, "service_name", "") or "").lower()
-                    srv_code = (getattr(c, "service_code", "") or "").lower()
-                    if srv_code in ("1006", "4405", "1005") or "retail food" in srv_name or "mobile food" in srv_name:
-                        continue  # Incompatible food license for non-food activity
-                    compatible_candidates.append(c)
-                attributed_candidates = compatible_candidates
+            def _service_chunk_sort_key(c) -> int:
+                sec = (getattr(c, "section", "") or "").lower()
+                if sec in pref_sections:
+                    return pref_sections.index(sec)
+                return 99
 
-        # 3. Check distinguishing terms
-        expanded_q = expand_query(clean_query)
-        distinguishing_terms = extract_distinguishing_terms(f"{clean_query} {expanded_q}")
-        if target_service and target_service.lower() not in ("business license", "license", "city license"):
-            for t in re.findall(r"\b[a-zA-Z0-9_-]+\b", target_service.lower()):
-                if t not in distinguishing_terms and len(t) > 2 and t not in (
-                    "business", "license", "city", "chicago", "service", "apply", "for"
-                ):
-                    distinguishing_terms.append(t)
+            service_chunks.sort(key=_service_chunk_sort_key)
+            attributed_candidates = service_chunks
+            retrieval_mode = "service_scoped"
 
-        if distinguishing_terms and attributed_candidates:
-            matched_candidates = []
-            suggested_svc = (activity.suggested_candidate_service or "").lower()
-            for c in attributed_candidates:
-                chunk_text = (getattr(c, "text", "") or "").lower()
-                srv_name = (getattr(c, "service_name", "") or "").lower()
-                srv_cat = (getattr(c, "category", "") or "").lower()
-                srv_code = (getattr(c, "service_code", "") or "").lower()
-                full_chunk_str = f"{chunk_text} {srv_name} {srv_cat} {srv_code}"
+        elif is_catalog_query:
+            # Retrieve verified canonical service overview chunks across distinct services in the KB
+            overview_chunks = [
+                c for c in self._chunks
+                if getattr(c, "section", "") == "overview" and getattr(c, "service_code", "") not in ("NOT_AVAILABLE", "")
+            ]
+            if not overview_chunks:
+                seen_codes = set()
+                for c in self._chunks:
+                    sc = getattr(c, "service_code", "")
+                    if sc and sc not in seen_codes:
+                        seen_codes.add(sc)
+                        overview_chunks.append(c)
 
-                term_match = any(dt in full_chunk_str for dt in distinguishing_terms)
-                suggested_match = False
-                if suggested_svc:
-                    suggested_match = (
-                        suggested_svc in srv_name
-                        or suggested_svc in srv_code
-                        or (suggested_svc in ("limited business license", "1010") and ("retail" in srv_cat or "1010" in srv_code or "limited business" in srv_name))
-                    )
+            # Sort deterministically: prioritized core Chicago business licenses, followed by others in numeric code order
+            core_priority = {
+                "1010": 1, "1006": 2, "4405": 3, "1470": 4, "1781": 5,
+                "1023": 6, "4404": 7, "1050": 8, "1007": 9, "1032": 10,
+                "1275": 11, "1003": 12, "4406": 13, "1683": 14,
+            }
+            overview_chunks.sort(key=lambda c: (core_priority.get(getattr(c, "service_code", ""), 99), getattr(c, "service_code", "")))
+            attributed_candidates = overview_chunks
 
-                if term_match or suggested_match:
-                    matched_candidates.append(c)
-
-            if not matched_candidates:
-                # Distinguishing entity is completely absent from knowledge base
-                logger.info(
-                    "retrieval_service_distinguishing_entity_unmatched",
-                    terms=distinguishing_terms,
-                    rejected_count=len(attributed_candidates),
+        else:
+            # Execute search based on mode
+            raw_candidates = []
+            if retrieval_mode == "bm25":
+                norm_query = normalize_for_retrieval(expanded)
+                bm25_res = self.bm25_retriever.search(norm_query, top_k=k)
+                for r in bm25_res:
+                    raw_candidates.append(r)
+            elif retrieval_mode == "semantic":
+                sem_res = self.semantic_retriever.search(expanded, top_k=k)
+                for r in sem_res:
+                    raw_candidates.append(r)
+            else:  # hybrid (default)
+                retrieval_mode = "hybrid"
+                hybrid_res = self.hybrid_retriever.search(
+                    expanded,
+                    top_k=k,
+                    intent=detected_intent,
+                    target_service=target_service,
                 )
+                for r in hybrid_res:
+                    raw_candidates.append(r)
+
+            # ── Source Attribution Validation ─────────────────────────────────
+            attributed_candidates = filter_attributed_results(raw_candidates)
+
+            # 1. Reject everything if query contains an unrecognized token
+            from app.nlp.activity_extractor import extract_business_activity, BusinessActivityType
+            activity = extract_business_activity(clean_query)
+            if activity.activity_type == BusinessActivityType.UNRECOGNIZED_TOKEN:
+                logger.info("retrieval_service_unrecognized_token_rejected", token=activity.extracted_text)
                 attributed_candidates = []
-            else:
-                attributed_candidates = matched_candidates
+
+            # 2. Activity domain compatibility filtering
+            if attributed_candidates:
+                # If the user query is explicitly non-food (tailoring, clothing, electronics, generic retail),
+                # reject Retail Food Establishment (1006) and other food licenses.
+                if not activity.is_food_related and activity.activity_type not in (BusinessActivityType.NONE, BusinessActivityType.GENERIC_BUSINESS):
+                    compatible_candidates = []
+                    for c in attributed_candidates:
+                        srv_name = (getattr(c, "service_name", "") or "").lower()
+                        srv_code = (getattr(c, "service_code", "") or "").lower()
+                        if srv_code in ("1006", "4405", "1005") or "retail food" in srv_name or "mobile food" in srv_name:
+                            continue  # Incompatible food license for non-food activity
+                        compatible_candidates.append(c)
+                    attributed_candidates = compatible_candidates
+
+            # 3. Check distinguishing terms
+            expanded_q = expand_query(clean_query)
+            distinguishing_terms = extract_distinguishing_terms(f"{clean_query} {expanded_q}")
+            if target_service and target_service.lower() not in ("business license", "license", "city license"):
+                for t in re.findall(r"\b[a-zA-Z0-9_-]+\b", target_service.lower()):
+                    if t not in distinguishing_terms and len(t) > 2 and t not in (
+                        "business", "license", "city", "chicago", "service", "apply", "for"
+                    ):
+                        distinguishing_terms.append(t)
+
+            if distinguishing_terms and attributed_candidates:
+                matched_candidates = []
+                suggested_svc = (activity.suggested_candidate_service or "").lower()
+                for c in attributed_candidates:
+                    chunk_text = (getattr(c, "text", "") or "").lower()
+                    srv_name = (getattr(c, "service_name", "") or "").lower()
+                    srv_cat = (getattr(c, "category", "") or "").lower()
+                    srv_code = (getattr(c, "service_code", "") or "").lower()
+                    full_chunk_str = f"{chunk_text} {srv_name} {srv_cat} {srv_code}"
+
+                    term_match = any(dt in full_chunk_str for dt in distinguishing_terms)
+                    suggested_match = False
+                    if suggested_svc:
+                        suggested_match = (
+                            suggested_svc in srv_name
+                            or suggested_svc in srv_code
+                            or (suggested_svc in ("limited business license", "1010") and ("retail" in srv_cat or "1010" in srv_code or "limited business" in srv_name))
+                        )
+
+                    if term_match or suggested_match:
+                        matched_candidates.append(c)
+
+                if not matched_candidates:
+                    # Distinguishing entity is completely absent from knowledge base
+                    logger.info(
+                        "retrieval_service_distinguishing_entity_unmatched",
+                        terms=distinguishing_terms,
+                        rejected_count=len(attributed_candidates),
+                    )
+                    attributed_candidates = []
+                else:
+                    attributed_candidates = matched_candidates
 
         # ── Assemble EvidenceResult items and SourceReferences ───────────────
         evidence_results: List[EvidenceResult] = []
         seen_source_ids = set()
         source_references: List[SourceReference] = []
 
-        for item in attributed_candidates:
+        for i, item in enumerate(attributed_candidates):
             # Determine score and retrieval method
-            if isinstance(item, HybridResult):
+            if is_catalog_query:
+                score = round(max(0.50, 0.95 - (i * 0.02)), 2)
+                method = "catalog"
+            elif isinstance(item, HybridResult):
                 score = item.rrf_score
                 method = "hybrid"
             elif hasattr(item, "score"):
@@ -327,7 +402,11 @@ class RetrievalService:
 
         # ── Calculate Confidence ──────────────────────────────────────────────
         confidence = 0.0
-        if evidence_results:
+        if is_catalog_query:
+            confidence = 0.90 if evidence_results else 0.0
+        elif retrieval_mode == "service_scoped":
+            confidence = 0.95 if evidence_results else 0.0
+        elif evidence_results:
             top_res = attributed_candidates[0] if attributed_candidates else None
             top_score = evidence_results[0].score or evidence_results[0].relevance_score
 
@@ -366,4 +445,15 @@ class RetrievalService:
             results=evidence_results,
             sources=source_references,
         )
+
+
+_global_retrieval_service: Optional[RetrievalService] = None
+
+
+def get_retrieval_service() -> RetrievalService:
+    """Returns the singleton RetrievalService instance."""
+    global _global_retrieval_service
+    if _global_retrieval_service is None:
+        _global_retrieval_service = RetrievalService(auto_load=True)
+    return _global_retrieval_service
 

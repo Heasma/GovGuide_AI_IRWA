@@ -81,7 +81,18 @@ def check_grounding_and_citations(
         if normalized_url not in valid_urls and "chicago.gov" not in normalized_url:
             reasons.append(f"Answer contains unverified URL not present in official evidence: {url}")
 
-    # Check 3: Check if answer indicates insufficient evidence
+    # Check 3: Same-Record Grounding & Cross-Service Contamination Check
+    requested_service_code = evidence_bundle.get("requested_service_code") or evidence_bundle.get("target_service_code")
+    if requested_service_code:
+        for r in results:
+            sc = str(r.get("service_code") or "").strip().lower()
+            if sc and sc != str(requested_service_code).strip().lower():
+                reasons.append(
+                    f"Cross-service contamination detected: evidence chunk service_code '{r.get('service_code')}' "
+                    f"does not match requested canonical service_code '{requested_service_code}'."
+                )
+
+    # Check 4: Check if answer indicates insufficient evidence
     refusal_patterns = [
         "could not find sufficient",
         "cannot confirm",

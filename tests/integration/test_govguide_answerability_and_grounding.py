@@ -468,3 +468,80 @@ async def test_live_conversation_and_context_switching(orchestrator):
     assert "1006" not in r_switched.answer
     assert "retail food establishment" not in r_switched.answer.lower()
 
+
+# ── Query Type Catalog vs Recommendation vs Clarification Tests ───────────────
+@pytest.mark.anyio
+async def test_license_catalog_and_classification_suite(orchestrator):
+    """
+    Validates the 7 required distinct query types:
+    1. 'enna enna business license inga edulkkalam' -> LICENSE_CATALOG
+    2. 'What business licenses are available?' -> LICENSE_CATALOG
+    3. 'show me all available business licenses' -> LICENSE_CATALOG
+    4. 'I want to start a restaurant. Which license do I need?' -> Specific 1006
+    5. 'I want to start a dress shop. Which license do I need?' -> Specific 1010, NOT 1006
+    6. 'I want to start a business. Which license do I need?' -> Clarification
+    7. 'ennaku licence edukanum' -> Clarification
+    """
+    # 1. Thanglish catalog query
+    r1 = await orchestrator.process_query(
+        query="enna enna business license inga edulkkalam",
+        request_id=str(uuid.uuid4()),
+    )
+    assert r1.confidence_label in (ConfidenceLabel.HIGH, ConfidenceLabel.MEDIUM)
+    assert "insufficient official evidence" not in r1.answer.lower()
+    assert "insufficient evidence" not in r1.answer.lower()
+    assert "1010" in r1.answer or "Limited Business" in r1.answer
+    assert "1006" in r1.answer or "Retail Food" in r1.answer
+    assert len(r1.sources) > 0
+
+    # 2. English catalog query
+    r2 = await orchestrator.process_query(
+        query="What business licenses are available?",
+        request_id=str(uuid.uuid4()),
+    )
+    assert r2.confidence_label in (ConfidenceLabel.HIGH, ConfidenceLabel.MEDIUM)
+    assert "insufficient evidence" not in r2.answer.lower()
+    assert "1010" in r2.answer or "1006" in r2.answer
+
+    # 3. Show me all available business licenses
+    r3 = await orchestrator.process_query(
+        query="show me all available business licenses",
+        request_id=str(uuid.uuid4()),
+    )
+    assert r3.confidence_label in (ConfidenceLabel.HIGH, ConfidenceLabel.MEDIUM)
+    assert "insufficient evidence" not in r3.answer.lower()
+    assert "1010" in r3.answer or "1006" in r3.answer
+
+    # 4. Specific restaurant -> 1006
+    r4 = await orchestrator.process_query(
+        query="I want to start a restaurant. Which license do I need?",
+        request_id=str(uuid.uuid4()),
+    )
+    assert "1006" in r4.answer or "Retail Food" in r4.answer
+
+    # 5. Specific dress shop -> 1010, NOT 1006
+    r5 = await orchestrator.process_query(
+        query="I want to start a dress shop. Which license do I need?",
+        request_id=str(uuid.uuid4()),
+    )
+    assert "1006" not in r5.answer
+    assert "retail food establishment" not in r5.answer.lower()
+    assert "1010" in r5.answer or "Limited Business" in r5.answer
+
+    # 6. Generic business -> Clarification
+    r6 = await orchestrator.process_query(
+        query="I want to start a business. Which license do I need?",
+        request_id=str(uuid.uuid4()),
+    )
+    assert any(term in r6.answer.lower() for term in ["type of business", "business type", "specify"])
+    assert "1006" not in r6.answer
+
+    # 7. Ambiguous license -> Clarification
+    r7 = await orchestrator.process_query(
+        query="ennaku licence edukanum",
+        request_id=str(uuid.uuid4()),
+    )
+    assert any(term in r7.answer.lower() for term in ["business type", "food business", "retail", "restaurant"])
+    assert "1006" not in r7.answer
+
+

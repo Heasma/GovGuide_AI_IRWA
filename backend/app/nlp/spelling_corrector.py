@@ -249,6 +249,14 @@ _DOMAIN_LEXICON: Set[str] = {
     "market", "supermarket", "company", "setup", "firm", "agency", "dress",
     "dresses", "garment", "garments", "textile", "textiles", "hardware",
     "furniture", "stationery", "jewelry", "salon", "barber", "beauty", "hair",
+    "sports", "sport", "primary", "secondary", "booting", "vessel", "passenger",
+    "scooter", "sharing", "towing", "storage", "lot", "truck", "host", "tier",
+    "representative", "pharmaceutical", "intermediary", "short", "term", "residential",
+    "rental", "provider", "transportation", "network", "emerging", "navy", "pier",
+    "kiosk", "pop-up", "regulated", "heliports", "raffles", "pawnbroker", "caterer",
+    "patio", "outdoor", "goods", "package", "club", "dance", "late", "hour",
+    "explosives", "manager", "dispatch", "taxicab", "affiliation", "messenger",
+    "bicycle", "manufacturing", "wholesale", "commercial", "garage", "filling", "station",
     "sewing", "stitch", "stitching", "alteration", "alterations",
 
     # Common English functional words

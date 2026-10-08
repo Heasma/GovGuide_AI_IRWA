@@ -251,8 +251,28 @@ class QueryUnderstandingService:
         retrieval_required = not is_conversational
 
         # ── Step 7: Domain Classification ─────────────────────────────────────
+        # ── Step 7: Domain Classification & Canonical Service Resolution ──────
+        from app.nlp.service_resolver import get_service_resolver
+        resolver = get_service_resolver()
+
+        resolved_code, resolved_name, resolve_score = resolver.resolve(normalized_query)
+        if not resolved_code:
+            resolved_code, resolved_name, resolve_score = resolver.resolve(raw_query)
+        if not resolved_code and context_entity:
+            resolved_code, resolved_name, resolve_score = resolver.resolve(context_entity)
+
+        is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(normalized_query)
+        if not is_unknown_svc:
+            is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(raw_query)
+
+        is_generic_svc = resolver.is_generic_service_query(normalized_query) or resolver.is_generic_service_query(raw_query)
+
         domain = classify_domain(normalized_query)
         is_supported = domain in SUPPORTED_DOMAINS
+
+        if resolved_code:
+            domain = Domain.BUSINESS_LICENSE
+            is_supported = True
 
         # ── Step 8: Named Entity Recognition & Context Resolution ─────────────
         resolved_entity, entity_source, context_switched = resolve_query_entity(
@@ -271,7 +291,30 @@ class QueryUnderstandingService:
             for e in extracted_raw
         ]
 
-        has_service_or_code = any(e.label in ("SERVICE", "LICENSE_CODE") for e in entities)
+        if resolved_code and resolved_name:
+            resolved_entity = resolved_name
+            entity_source = "canonical_resolver"
+            # Ensure entity list has the canonical service and code
+            has_resolved_svc = any(e.label == "SERVICE" and e.text.lower() == resolved_name.lower() for e in entities)
+            if not has_resolved_svc:
+                entities.append(
+                    EntityExtraction(
+                        text=resolved_name,
+                        label="SERVICE",
+                        confidence=resolve_score,
+                    )
+                )
+            has_resolved_code = any(e.label == "LICENSE_CODE" and e.text.lower() == resolved_code.lower() for e in entities)
+            if not has_resolved_code:
+                entities.append(
+                    EntityExtraction(
+                        text=resolved_code,
+                        label="LICENSE_CODE",
+                        confidence=1.0,
+                    )
+                )
+
+        has_service_or_code = any(e.label in ("SERVICE", "LICENSE_CODE") for e in entities) or bool(resolved_code)
 
         if not is_conversational:
             if resolved_entity and not has_service_or_code:
@@ -292,6 +335,8 @@ class QueryUnderstandingService:
         expanded_query_str = expand_query(normalized_query)
         if resolved_entity and not is_conversational and resolved_entity not in expanded_query_str:
             expanded_query_str = f"{resolved_entity} {expanded_query_str}"
+        if resolved_code and resolved_code not in expanded_query_str:
+            expanded_query_str = f"{resolved_code} {expanded_query_str}"
 
         tokens = tokenize_query(normalized_query, remove_stopwords=True)
 
@@ -304,7 +349,7 @@ class QueryUnderstandingService:
             resolved_entity
             and resolved_entity.lower() not in ("business license", "license", "licenses", "city license")
             and entity_source not in ("none",)
-        )
+        ) or bool(resolved_code)
 
         specific_action_intents = {
             Intent.FEES,
@@ -313,6 +358,7 @@ class QueryUnderstandingService:
             Intent.PROCEDURE,
             Intent.APPLICATION_PROCEDURE,
             Intent.RENEWAL,
+            Intent.LICENSE_CATALOG,
         }
         has_action_intent = any(it in specific_action_intents for it in intents) or intent in specific_action_intents
 
@@ -332,6 +378,14 @@ class QueryUnderstandingService:
 
         if not is_supported:
             needs_clarification = False
+
+        elif is_unknown_svc and not resolved_code:
+            retrieval_required = False
+
+        elif is_generic_svc and not resolved_code:
+            needs_clarification = True
+            clarification_type = "service_selection"
+            retrieval_required = False
 
         elif is_short_followup_pattern:
             if not context_entity:
@@ -373,6 +427,18 @@ class QueryUnderstandingService:
             len(tokens) <= 1 and intent == Intent.GENERAL and not entities and not is_conversational and is_supported
         )
 
+        target_services_list = []
+        target_codes_list = []
+        if resolved_name:
+            target_services_list.append(resolved_name)
+        if resolved_code:
+            target_codes_list.append(resolved_code)
+        for e in entities:
+            if e.label == "SERVICE" and e.text not in target_services_list:
+                target_services_list.append(e.text)
+            elif e.label == "LICENSE_CODE" and e.text not in target_codes_list:
+                target_codes_list.append(e.text)
+
         search_params = {
             "intent": intent.value if hasattr(intent, "value") else str(intent),
             "intents": [i.value if hasattr(i, "value") else str(i) for i in intents],
@@ -384,8 +450,13 @@ class QueryUnderstandingService:
             "is_food_related": business_activity.is_food_related,
             "active_entity_preserved": bool(context_entity or resolved_entity),
             "entity_count": len(entities),
-            "target_services": [e.text for e in entities if e.label == "SERVICE"] or ([resolved_entity] if resolved_entity and retrieval_required else []),
-            "target_codes": [e.text for e in entities if e.label == "LICENSE_CODE"],
+            "target_services": target_services_list or ([resolved_entity] if resolved_entity and retrieval_required else []),
+            "target_codes": target_codes_list,
+            "resolved_service_code": resolved_code,
+            "resolved_service_name": resolved_name,
+            "resolution_confidence": resolve_score if resolved_code else 0.0,
+            "is_unknown_service": is_unknown_svc and not resolved_code,
+            "unknown_service_name": unknown_svc_name if (is_unknown_svc and not resolved_code) else None,
             "target_orgs": [e.text for e in entities if e.label == "ORGANIZATION"],
             "target_locations": [e.text for e in entities if e.label == "LOCATION"],
             "resolved_context_entity": resolved_entity if retrieval_required else context_entity,

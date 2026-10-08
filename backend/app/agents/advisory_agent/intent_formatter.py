@@ -177,6 +177,18 @@ def get_clarification_response(
         except ValueError:
             lang = LanguageCode.ENGLISH
 
+    # 0. Generic service query clarification (Requirement 8)
+    if clarification_type == "service_selection":
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            return "Sure. Which government service would you like to know about? Please provide the service name or license code."
+        elif lang == LanguageCode.TAMIL:
+            return "நிச்சயமாக. நீங்கள் எந்த அரசு சேவை அல்லது உரிமம் பற்றி தெரிந்து கொள்ள விரும்புகிறீர்கள்? சேவை பெயர் அல்லது உரிமக் குறியீட்டைக் குறிப்பிடவும்."
+        elif lang == LanguageCode.SINHALA:
+            return "Sure! ඔබට දැන ගැනීමට අවශ්‍ය කුමන රජයේ සේවාව හෝ බලපත්‍රය පිළිබඳවද? කරුණාකර සේවා නම හෝ බලපත්‍ර කේතය සඳහන් කරන්න."
+        elif lang == LanguageCode.SINGLISH:
+            return "Sure. Oyata dana ganna ona mona government service hari license eka ganada? Karunakara service name eka hari license code eka kiyanna."
+        return "Sure. Which government service would you like to know about? Please provide the service name or license code."
+
     # 1. Generic Retail clarification (asking for type of goods)
     if clarification_type == "retail_goods":
         if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
@@ -526,7 +538,9 @@ def format_intent_response(
     if any(w in q_lower for w in ("everything", "all requirements", "full guide", "complete process", "step by step guide to open")):
         return _format_comprehensive_response(primary, query, lang=lang)
 
-    if intent_val == Intent.FEES.value:
+    if intent_val in (Intent.LICENSE_CATALOG.value, "license_catalog", "available_business_licenses"):
+        return _format_license_catalog_response(profiles, query, lang=lang)
+    elif intent_val == Intent.FEES.value:
         return _format_fee_response(primary, query, lang=lang)
     elif intent_val == Intent.REQUIRED_DOCUMENTS.value:
         return _format_documents_response(primary, query, lang=lang)
@@ -551,6 +565,211 @@ def format_intent_response(
         return _format_general_response(primary, query, lang=lang)
 
 
+def _format_license_catalog_response(
+    profiles: List[Dict[str, Any]],
+    query: str,
+    lang: LanguageCode = LanguageCode.ENGLISH,
+) -> Tuple[str, bool, str]:
+    if not profiles:
+        return (
+            get_insufficient_evidence_response(lang),
+            False,
+            "No matching government service records were found in the knowledge base."
+        )
+
+    # Deduplicate profiles strictly by service_code preserving order
+    seen_codes = set()
+    deduped_profiles = []
+    for p in profiles:
+        c = p.get("service_code")
+        if c and c not in seen_codes:
+            seen_codes.add(c)
+            deduped_profiles.append(p)
+
+    selected = deduped_profiles
+    count = len(selected)
+
+    items_text = []
+    for i, p in enumerate(selected, 1):
+        name = p.get("service_name") or f"Service {p.get('service_code')}"
+        code = p.get("service_code")
+        desc = (p.get("overview") or p.get("eligibility_summary") or "").strip()
+        if desc and desc.upper() not in NOT_AVAILABLE_VALUES and "NOT_AVAILABLE" not in desc:
+            first_sent = re.split(r"(?<=[.!?])\s+", desc)[0].strip()
+            if len(first_sent) > 160:
+                first_sent = first_sent[:157].rstrip() + "..."
+            short_desc = first_sent
+        else:
+            short_desc = "Summary information is not available in the current knowledge base."
+
+        items_text.append(f"{i}. {name} — Code: {code}\n   Summary: {short_desc}")
+
+    catalog_body = "\n\n".join(items_text)
+
+    if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+        lead = f"Verified government knowledge base-la irukka {count} services oda summary idho:\n\n"
+        tail = (
+            f"\n\nThese {count} services are based on the current verified GovernmentService knowledge base. "
+            "If you tell me your business/activity, I can identify the most relevant service."
+        )
+    elif lang == LanguageCode.TAMIL:
+        lead = f"சரிபார்க்கப்பட்ட அறிவுத் தளத்தில் உள்ள {count} அரசு சேவைகளின் சுருக்கம் இதோ:\n\n"
+        tail = (
+            f"\n\nஇந்த {count} சேவைகளும் தற்போதைய சரிபார்க்கப்பட்ட GovernmentService அறிவுத் தளத்தை அடிப்படையாகக் கொண்டவை. "
+            "உங்கள் வணிகம் அல்லது செயல்பாட்டைக் கூறினால், உங்களுக்கு மிகவும் பொருத்தமான சேவையை அடையாளம் காண உதவுகிறேன்."
+        )
+    elif lang == LanguageCode.SINHALA:
+        lead = f"තහවුරු කරන ලද දැනුම් පදනමේ ඇති රජයේ සේවාවන් {count} හි සාරාංශය මෙන්න:\n\n"
+        tail = (
+            f"\n\nමෙම සේවාවන් {count} වත්මන් තහවුරු කළ GovernmentService දැනුම් පදනම මත පදනම් වේ. "
+            "ඔබගේ ව්‍යාපාරය හෝ ක්‍රියාකාරකම සඳහන් කළහොත්, වඩාත් ගැලපෙන සේවාව හඳුනා ගැනීමට මට උපකාර කළ හැක."
+        )
+    elif lang == LanguageCode.SINGLISH:
+        lead = f"Verified knowledge base eke thiyena government services {count} wala summary eka mehema thiyenawa:\n\n"
+        tail = (
+            f"\n\nMe services {count} danata verified GovernmentService knowledge base eka matha adala wenne. "
+            "Oya karanna inna business eka kiwwoth match wena service eka identify karala denna puluwan."
+        )
+    else:
+        lead = f"Here is a summary of the {count} government services available in the verified knowledge base:\n\n"
+        tail = (
+            f"\n\nThese {count} services are based on the current verified GovernmentService knowledge base. "
+            "If you tell me your business/activity, I can identify the most relevant service."
+        )
+
+    full_answer = f"{lead}{catalog_body}{tail}"
+    return full_answer, True, f"Provided dynamic catalog of {count} distinct government services from official records."
+
+
+def _format_service_full_details(
+    p: Dict[str, Any],
+    query: str,
+    lang: LanguageCode = LanguageCode.ENGLISH
+) -> Tuple[str, bool, str]:
+    """
+    Formats a comprehensive multi-section service overview as specified in Requirement 6:
+    ### [Service Name]
+    **Code:** [service_code]
+
+    **Overview**
+    [verified overview]
+
+    **Eligibility**
+    [verified eligibility]
+
+    **Required Documents**
+    [verified documents]
+
+    **Application Procedure**
+    [verified procedure]
+
+    **Fees**
+    [verified fees]
+
+    **Renewal**
+    [verified renewal]
+
+    **Responsible Office**
+    [verified office/contact]
+
+    **Legal / Reference**
+    [verified legal/source information]
+    """
+    name = p.get("service_name") or f"Service {p.get('service_code')}"
+    code = p.get("service_code") or "N/A"
+    url = p.get("source_url") or p.get("application_portal_url") or "https://www.chicago.gov/bacp"
+
+    sections = [
+        f"### {name}",
+        f"**Code:** {code}\n"
+    ]
+
+    # Overview
+    overview = p.get("overview") or p.get("service_description")
+    if is_valid_field(overview):
+        sections.append(f"**Overview**\n{overview.strip()}\n")
+    else:
+        sections.append("**Overview**\nInformation not available in the current verified knowledge base.\n")
+
+    # Eligibility
+    elig = p.get("eligibility_summary") or p.get("eligibility_criteria")
+    if is_valid_field(elig):
+        sections.append(f"**Eligibility**\n{elig.strip()}\n")
+    else:
+        sections.append("**Eligibility**\nInformation not available in the current verified knowledge base.\n")
+
+    # Required Documents
+    docs = p.get("required_documents")
+    if is_valid_field(docs):
+        doc_items = [d.strip() for d in re.split(r"[|;]|\n(?:\s*[-•*]\s*)?", docs) if d.strip()]
+        doc_bullets = "\n".join(f"• {d.lstrip('•-* ')}" for d in doc_items)
+        sections.append(f"**Required Documents**\n{doc_bullets}\n")
+    else:
+        sections.append("**Required Documents**\nInformation not available in the current verified knowledge base.\n")
+
+    # Application Procedure
+    proc = p.get("application_steps")
+    insp = p.get("inspection_required")
+    portal = p.get("application_portal_url") or url
+    if is_valid_field(proc):
+        raw_steps = [s.strip() for s in re.split(r"[|;]|\n(?:\s*\d+\.\s*)", proc) if s.strip()]
+        if len(raw_steps) > 1:
+            steps_formatted = "\n".join(f"{i}. {s.lstrip('0123456789. ')}" for i, s in enumerate(raw_steps, 1))
+        else:
+            steps_formatted = proc.strip()
+        insp_note = f"\n• **Inspection Requirement:** {insp}" if is_valid_field(insp) else ""
+        sections.append(f"**Application Procedure**\n{steps_formatted}{insp_note}\nPortal: {portal}\n")
+    elif is_valid_field(portal) and portal != "NOT_AVAILABLE":
+        sections.append(f"**Application Procedure**\nSubmit online via Chicago Business Direct ({portal}).\n")
+    else:
+        sections.append("**Application Procedure**\nInformation not available in the current verified knowledge base.\n")
+
+    # Fees
+    fee_amt = p.get("fee_amount")
+    fee_desc = p.get("fee_description")
+    if is_valid_field(fee_amt):
+        extra = f" ({fee_desc})" if is_valid_field(fee_desc) else ""
+        sections.append(f"**Fees**\n{fee_amt}{extra}\n")
+    else:
+        sections.append("**Fees**\nInformation not available in the current verified knowledge base.\n")
+
+    # Renewal
+    term = p.get("license_term_years")
+    period = p.get("renewal_period")
+    if is_valid_field(term) or is_valid_field(period):
+        parts = []
+        if is_valid_field(term):
+            parts.append(f"Validity: {term}")
+        if is_valid_field(period):
+            parts.append(f"Renewal: {period}")
+        sections.append(f"**Renewal**\n{' | '.join(parts)}\n")
+    else:
+        sections.append("**Renewal**\nInformation not available in the current verified knowledge base.\n")
+
+    # Responsible Office
+    addr = p.get("office_address") or "Small Business Center (SBC), City Hall, 121 N. LaSalle St., Room 800, Chicago, IL 60602"
+    phone = p.get("office_phone") or "(312) 744-6060"
+    hours = p.get("office_hours") or "Monday - Friday, 8:30 AM - 4:30 PM"
+    dept = p.get("office_name") or "City of Chicago Department of Business Affairs and Consumer Protection (BACP)"
+    sections.append(
+        f"**Responsible Office**\n"
+        f"{dept}\n"
+        f"• Address: {addr}\n"
+        f"• Business Hours: {hours}\n"
+        f"• Phone: {phone}\n"
+    )
+
+    # Legal / Reference
+    legal = p.get("legal_reference")
+    if is_valid_field(legal):
+        sections.append(f"**Legal / Reference**\n{legal.strip()}\nOfficial Portal: {url} [Source 1]")
+    else:
+        sections.append(f"**Legal / Reference**\nOfficial Portal: {url} [Source 1]")
+
+    answer = "\n".join(sections)
+    return answer, True, f"Full verified details for {name} (Code {code}) provided from official records."
+
+
 def _format_service_lookup_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
     name = p["service_name"]
     code = p["service_code"]
@@ -560,7 +779,7 @@ def _format_service_lookup_response(p: Dict[str, Any], query: str, lang: Languag
     q_lower = query.lower()
 
     # 1. Specialized cake / bakery business handling
-    if bool(re.search(r"\b(cake|baking|bake|pastry|cupcake)\b", q_lower)):
+    if bool(re.search(r"\b(cake|baking|bake|pastry|cupcake)\b", q_lower)) and "sport" not in q_lower:
         if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
             answer = (
                 "Cake business start panna, first unga business setup fixed commercial food establishment-aa, home-based-aa, illa retail bakery-aa nu determine panna vendum.\n\n"
@@ -582,7 +801,7 @@ def _format_service_lookup_response(p: Dict[str, Any], query: str, lang: Languag
         return answer, True, "Cake business guidance and applicable license overview provided from official records."
 
     # 2. Specialized tailoring service handling
-    if bool(re.search(r"\b(tailoring|tailor|tailering|tailorng|alterations)\b", q_lower)):
+    if bool(re.search(r"\b(tailoring|tailor|tailering|tailorng|alterations)\b", q_lower)) and "sport" not in q_lower:
         if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
             answer = (
                 f"Tailoring shop open panna, Chicago municipal guidelines padi general commercial retail & service activity-ku **{name} (Code {code})** check pannanum [Source 1].\n\n"
@@ -597,68 +816,9 @@ def _format_service_lookup_response(p: Dict[str, Any], query: str, lang: Languag
             )
         return answer, True, "Tailoring service guidance provided from official records."
 
-    # 3. Context-aware Explanation handling
-    if bool(re.search(r"\b(explain|explain\s+pannu|details|meaning)\b", q_lower)):
-        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
-            answer = (
-                f"Sure. Namma previous-a **{name} (Code {code})** pathi pesinom. Adhoda scope & details:\n\n"
-                f"• **Category:** {cat}\n"
-                f"• **Purpose:** {overview}\n\n"
-                f"Fees, required documents checklist, alladhu application steps pathi explain pannanuma?\n\n"
-                f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-            )
-        else:
-            answer = (
-                f"Sure! Continuing from our discussion about the **{name} (License Code: {code})**:\n\n"
-                f"• **License Category:** {cat}\n"
-                f"• **Scope & Purpose:** {overview}\n\n"
-                f"Would you like me to explain the fees, required documents, or step-by-step application procedure?\n\n"
-                f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-            )
-        return answer, True, "Explanation of active service provided from official records."
-
-    # Standard service lookup
-    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
-        answer = (
-            f"Chicago-la unga business requirement-ku, **{name} (Code {code})** thevai.\n\n"
-            f"• **License Category:** {cat}\n"
-            f"• **Scope & Purpose:** {overview}\n\n"
-            f"Fees, required documents, alladhu application procedure pathi theriya venduma?\n\n"
-            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-        )
-    elif lang == LanguageCode.TAMIL:
-        answer = (
-            f"உங்கள் வணிகத் தேவைக்கு, உங்களுக்கு **{name} (Code {code})** தேவை.\n\n"
-            f"• **உரிமப் பிரிவு:** {cat}\n"
-            f"• **நோக்கம்:** {overview}\n\n"
-            f"கட்டணம், தேவையான ஆவணங்கள் அல்லது விண்ணப்ப முறை பற்றிய விவரங்கள் தேவையா?\n\n"
-            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-        )
-    elif lang == LanguageCode.SINHALA:
-        answer = (
-            f"ඔබේ ව්‍යාපාර අවශ්‍යතාවය සඳහා, ඔබට **{name} (Code {code})** අවශ්‍ය වේ.\n\n"
-            f"• **බලපත්‍ර කාණ්ඩය:** {cat}\n"
-            f"• **අරමුණ:** {overview}\n\n"
-            f"ගාස්තු, ලියකියවිලි හෝ අයදුම් කිරීමේ පියවර පිළිබඳ විස්තර අවශ්‍යද?\n\n"
-            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-        )
-    elif lang == LanguageCode.SINGLISH:
-        answer = (
-            f"Oyata business eka sandaha **{name} (Code {code})** ona wenawa.\n\n"
-            f"• **Category:** {cat}\n"
-            f"• **Purpose:** {overview}\n\n"
-            f"Fees, documents, hari application procedure eka gana wisthara onada?\n\n"
-            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-        )
-    else:
-        answer = (
-            f"For your business inquiry, you will need a **{name} (License Code: {code})**.\n\n"
-            f"• **License Category:** {cat}\n"
-            f"• **Scope & Purpose:** {overview}\n\n"
-            f"Would you like details on the fees, required documents, or application procedure?\n\n"
-            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-        )
-    return answer, True, "License identification and overview provided from official records."
+    # 3. Comprehensive service details for "tell me about", "service details", license code/name lookup
+    # As specified in Requirement 6: Provide ALL AVAILABLE VERIFIED INFORMATION for that service.
+    return _format_service_full_details(p, query, lang=lang)
 
 
 def _format_procedure_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
@@ -686,34 +846,41 @@ def _format_procedure_response(p: Dict[str, Any], query: str, lang: LanguageCode
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
         answer = (
-            f"**{name} (Code {code})** apply panna indha steps follow pannunga:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Application Procedure:**\n"
             f"{steps_formatted}{insp_note}\n\n"
-            f"Applications online-la Chicago Business Direct ({portal}) vazhiya alladhu City Hall Small Business Center (121 N. LaSalle St., Room 800)-la direct-a submit pannalaam [Source 1]."
+            f"Applications online-la Chicago Business Direct ({portal}) vazhiya alladhu City Hall Small Business Center (121 N. LaSalle St., Room 800)-la direct-a submit pannalaam [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, required documents, fees, and renewal details."
         )
     elif lang == LanguageCode.TAMIL:
         answer = (
-            f"**{name} (Code {code})** விண்ணப்பிக்க பின்வரும் படிகளைப் பின்பற்றவும்:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**விண்ணப்ப முறை:**\n"
             f"{steps_formatted}{insp_note}\n\n"
             f"விண்ணப்பங்களை Chicago Business Direct ({portal}) மூலம் ஆன்லைனில் அல்லது City Hall Small Business Center (121 N. LaSalle St., Room 800) இல் சமர்ப்பிக்கலாம் [Source 1]."
         )
     elif lang == LanguageCode.SINHALA:
         answer = (
-            f"**{name} (Code {code})** සඳහා අයදුම් කිරීමට මෙම පියවර අනුගමනය කරන්න:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**අයදුම් කිරීමේ පියවර:**\n"
             f"{steps_formatted}{insp_note}\n\n"
             f"Chicago Business Direct ({portal}) හරහා මාර්ගගතව හෝ City Hall Small Business Center (121 N. LaSalle St., Room 800) හිදී අයදුම්පත් ඉදිරිපත් කළ හැක [Source 1]."
         )
     elif lang == LanguageCode.SINGLISH:
         answer = (
-            f"**{name} (Code {code})** apply karanna me steps follow karanna:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Application Procedure:**\n"
             f"{steps_formatted}{insp_note}\n\n"
             f"Applications Chicago Business Direct ({portal}) haraha online hari City Hall Small Business Center (121 N. LaSalle St., Room 800) eke direct hari submit karanna puluwan [Source 1]."
         )
     else:
         answer = (
-            f"To apply for a **{name} (Code {code})**, follow these steps:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Application Procedure:**\n"
             f"{steps_formatted}{insp_note}\n\n"
             f"Applications can be submitted online via Chicago Business Direct ({portal}) "
-            f"or in person at City Hall (Small Business Center, 121 N. LaSalle St., Room 800) [Source 1]."
+            f"or in person at City Hall (Small Business Center, 121 N. LaSalle St., Room 800) [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, required documents, fees, and renewal details."
         )
     return answer, True, "Application procedure steps provided from official records."
 
@@ -727,24 +894,30 @@ def _format_documents_response(p: Dict[str, Any], query: str, lang: LanguageCode
     if not is_valid_field(docs):
         if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
             answer = (
-                f"Naan **{name} (Code {code})** pathina information kandupidithen, "
-                f"aana available official records-la verified required documents checklist kidaikkala.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**Required Documents:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"Current documentation requirements-ai verify panna City of Chicago BACP alladhu Chicago Business Direct ({url}) check pannunga [Source 1]."
             )
         elif lang == LanguageCode.TAMIL:
             answer = (
-                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் அதில் சரிபார்க்கப்பட்ட ஆவணங்களின் பட்டியல் இல்லை.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**தேவையான ஆவணங்கள்:**\n"
+                f"தகவல் தற்போது சரிபார்க்கப்பட்ட தரவுத்தளத்தில் இல்லை.\n\n"
                 f"தயவுசெய்து Chicago Business Direct ({url}) தளத்தைப் பார்க்கவும் [Source 1]."
             )
         elif lang == LanguageCode.SINHALA:
             answer = (
-                f"**{name} (Code {code})** පිළිබඳ තොරතුරු සොයා ගන්නා ලදී, නමුත් ලියකියවිලි ලැයිස්තුවක් නොමැත.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**අවශ්‍ය ලියකියවිලි:**\n"
+                f"වත්මන් නිල දත්ත ගබඩාවේ තොරතුරු නොමැත.\n\n"
                 f"කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
             )
         else:
             answer = (
-                f"I found information about the **{name} (Code {code})**, "
-                f"but the available official records do not specify a verified required documents checklist for this license.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**Required Documents:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"Please verify current documentation requirements with the City of Chicago BACP or via Chicago Business Direct at {url} [Source 1]."
             )
         return answer, False, "Required documents checklist is unavailable in official records."
@@ -754,33 +927,40 @@ def _format_documents_response(p: Dict[str, Any], query: str, lang: LanguageCode
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
         answer = (
-            f"**{name} (Code {code})** edukka thevayana required documents:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Required Documents:**\n"
             f"{doc_bullets}\n\n"
-            f"Indha requirements official records ({url}) based-a provide pannapattu irukku [Source 1]."
+            f"Indha requirements official records ({url}) based-a provide pannapattu irukku [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, fees, application procedure, and renewal details."
         )
     elif lang == LanguageCode.TAMIL:
         answer = (
-            f"**{name} (Code {code})** பெற தேவையான ஆவணங்கள்:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**தேவையான ஆவணங்கள்:**\n"
             f"{doc_bullets}\n\n"
             f"இவை அதிகாரப்பூர்வ பதிவுகளின்படி ({url}) வழங்கப்பட்டுள்ளன [Source 1]."
         )
     elif lang == LanguageCode.SINHALA:
         answer = (
-            f"**{name} (Code {code})** සඳහා අවශ්‍ය ලියකියවිලි:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**අවශ්‍ය ලියකියවිලි:**\n"
             f"{doc_bullets}\n\n"
             f"මෙම අවශ්‍යතා නිල වාර්තා ({url}) මත පදනම් වේ [Source 1]."
         )
     elif lang == LanguageCode.SINGLISH:
         answer = (
-            f"**{name} (Code {code})** ganna awashya liyakiyawili:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Required Documents:**\n"
             f"{doc_bullets}\n\n"
             f"Me awashyatha official records ({url}) anuwa we [Source 1]."
         )
     else:
         answer = (
-            f"For the **{name} (Code {code})**, the required documents include:\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Required Documents:**\n"
             f"{doc_bullets}\n\n"
-            f"These requirements are based on the available official records ({url}) [Source 1]."
+            f"These requirements are based on the available official records ({url}) [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, fees, application procedure, and renewal details."
         )
     return answer, True, "Required documentation list provided from official records."
 
@@ -795,25 +975,33 @@ def _format_fee_response(p: Dict[str, Any], query: str, lang: LanguageCode = Lan
     if not is_valid_field(fee_amt):
         if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
             answer = (
-                f"Naan official records-la **{name} (Code {code})** kandupidithen, "
-                f"aana retrieved evidence-la verified fee amount kidaikkala.\n\n"
-                f"Indha service-ku verified fee information enakku kidaikkala. "
+                f"**{name} — Code {code}**\n\n"
+                f"**Fees:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
+                f"The available government records do not currently provide a verified fee amount for this license. "
                 f"Current fee details-ai verify panna City of Chicago BACP alladhu Chicago Business Direct ({url}) check pannunga [Source 1]."
             )
         elif lang == LanguageCode.TAMIL:
             answer = (
-                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் அதில் சரிபார்க்கப்பட்ட கட்டண விவரங்கள் இல்லை.\n\n"
-                f"இந்த சேவைக்கான சரிபார்க்கப்பட்ட கட்டணத் தகவல் என்னிடம் இல்லை. தயவுசெய்து Chicago Business Direct ({url}) தளத்தைப் பார்க்கவும் [Source 1]."
+                f"**{name} — Code {code}**\n\n"
+                f"**கட்டணம்:**\n"
+                f"தகவல் தற்போது சரிபார்க்கப்பட்ட தரவுத்தளத்தில் இல்லை.\n\n"
+                f"The available government records do not currently provide a verified fee amount for this license. "
+                f"தயவுசெய்து Chicago Business Direct ({url}) தளத்தைப் பார்க்கவும் [Source 1]."
             )
         elif lang == LanguageCode.SINHALA:
             answer = (
-                f"**{name} (Code {code})** පිළිබඳ තොරතුරු සොයා ගන්නා ලදී, නමුත් තහවුරු කළ ගාස්තු ප්‍රමාණයක් නොමැත.\n\n"
-                f"මෙම සේවාව සඳහා තහවුරු කළ ගාස්තු තොරතුරු මා සතුව නොමැත. කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
+                f"**{name} — Code {code}**\n\n"
+                f"**ගාස්තු:**\n"
+                f"වත්මන් නිල දත්ත ගබඩාවේ තොරතුරු නොමැත.\n\n"
+                f"The available government records do not currently provide a verified fee amount for this license. "
+                f"කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
             )
         else:
             answer = (
-                f"I found the **{name} (Code {code})** in the available official records, "
-                f"but the retrieved evidence does not contain a verified fee amount.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**Fees:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"The available government records do not currently provide a verified fee amount for this license. "
                 f"Please verify the current fee with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) "
                 f"or check Chicago Business Direct at {url} [Source 1]."
@@ -824,28 +1012,40 @@ def _format_fee_response(p: Dict[str, Any], query: str, lang: LanguageCode = Lan
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
         answer = (
-            f"Official records padi, **{name} (Code {code})** license fee **{fee_amt}**{extra}.\n\n"
-            f"Neenga current fee verify panna alladhu payment submit panna Chicago Business Direct ({url}) use pannalaam [Source 1]."
+            f"**{name} — Code {code}**\n\n"
+            f"**Fees:**\n"
+            f"Official records padi, license fee **{fee_amt}**{extra}.\n\n"
+            f"Neenga current fee verify panna alladhu payment submit panna Chicago Business Direct ({url}) use pannalaam [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, required documents, application procedure, and renewal details."
         )
     elif lang == LanguageCode.TAMIL:
         answer = (
-            f"அதிகாரப்பூர்வ பதிவுகளின்படி, **{name} (Code {code})** உரிமக் கட்டணம் **{fee_amt}**{extra}.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**கட்டணம்:**\n"
+            f"அதிகாரப்பூர்வ பதிவுகளின்படி, உரிமக் கட்டணம் **{fee_amt}**{extra}.\n\n"
             f"Chicago Business Direct ({url}) மூலம் கட்டணத்தைச் செலுத்தலாம் அல்லது சரிபார்க்கலாம் [Source 1]."
         )
     elif lang == LanguageCode.SINHALA:
         answer = (
-            f"නිල වාර්තාවලට අනුව, **{name} (Code {code})** බලපත්‍ර ගාස්තුව **{fee_amt}**{extra} වේ.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**ගාස්තු:**\n"
+            f"නිල වාර්තාවලට අනුව, බලපත්‍ර ගාස්තුව **{fee_amt}**{extra} වේ.\n\n"
             f"Chicago Business Direct ({url}) හරහා ගාස්තුව ගෙවීමට හෝ තහවුරු කිරීමට හැක [Source 1]."
         )
     elif lang == LanguageCode.SINGLISH:
         answer = (
-            f"Official records anuwa, **{name} (Code {code})** license fee eka **{fee_amt}**{extra} wenawa.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Fees:**\n"
+            f"Official records anuwa, license fee eka **{fee_amt}**{extra} wenawa.\n\n"
             f"Chicago Business Direct ({url}) haraha payment karanna puluwan [Source 1]."
         )
     else:
         answer = (
+            f"**{name} — Code {code}**\n\n"
+            f"**Fees:**\n"
             f"A **{name} (Code {code})** costs **{fee_amt}**{extra}, according to the available official records.\n\n"
-            f"You can verify the current fee or submit your payment through Chicago Business Direct ({url}) [Source 1]."
+            f"You can verify the current fee or submit your payment through Chicago Business Direct ({url}) [Source 1].\n\n"
+            f"If you want, I can also show the eligibility, required documents, application procedure, and renewal details."
         )
     return answer, True, "Verified fee details provided from official records."
 
@@ -861,9 +1061,10 @@ def _format_office_response(p: Dict[str, Any], query: str, lang: LanguageCode = 
     has_specific = bool(name and code and code != "N/A")
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
-        lead = f"**{name} (Code {code})** sambanthapata inquiries matrum applications handle pandradhu " if has_specific else ""
+        lead = f"**{name} — Code {code}**\n\n" if has_specific else ""
         answer = (
-            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**:\n\n"
+            f"{lead}**Responsible Office:**\n"
+            f"**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**\n\n"
             f"• **Address:** Small Business Center (SBC), City Hall, {addr}\n"
             f"• **Business Hours:** {hours}\n"
             f"• **Phone:** {phone}\n"
@@ -871,27 +1072,30 @@ def _format_office_response(p: Dict[str, Any], query: str, lang: LanguageCode = 
             f"City Hall Small Business Center-la business hours-la direct-a consultation panna mudiyum."
         )
     elif lang == LanguageCode.TAMIL:
-        lead = f"**{name} (Code {code})** தொடர்பான விண்ணப்பங்கள் மற்றும் விசாரணைகளை " if has_specific else ""
+        lead = f"**{name} — Code {code}**\n\n" if has_specific else ""
         answer = (
-            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)** கையாள்கிறது:\n\n"
+            f"{lead}**பொறுப்பான அலுவலகம்:**\n"
+            f"**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**\n\n"
             f"• **முகவரி:** Small Business Center (SBC), City Hall, {addr}\n"
             f"• **வேலை நேரம்:** {hours}\n"
             f"• **தொலைபேசி:** {phone}\n"
             f"• **இணையதளம்:** {url} [Source 1]"
         )
     elif lang == LanguageCode.SINHALA:
-        lead = f"**{name} (Code {code})** සම්බන්ධ අයදුම්පත් " if has_specific else ""
+        lead = f"**{name} — Code {code}**\n\n" if has_specific else ""
         answer = (
-            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)** විසින් හසුරුවනු ලැබේ:\n\n"
+            f"{lead}**වගකිවයුතු කාර්යාලය:**\n"
+            f"**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**\n\n"
             f"• **ලිපිනය:** Small Business Center (SBC), City Hall, {addr}\n"
             f"• **වේලාවන්:** {hours}\n"
             f"• **දුරකථන:** {phone}\n"
             f"• **නිල වෙබ් අඩවිය:** {url} [Source 1]"
         )
     else:
-        service_lead = f"For the **{name} (Code {code})**, applications and inquiries are handled by the " if has_specific else "The "
+        service_lead = f"**{name} — Code {code}**\n\n" if has_specific else ""
         answer = (
-            f"{service_lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**:\n\n"
+            f"{service_lead}**Responsible Office:**\n"
+            f"**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**\n\n"
             f"• **Address:** Small Business Center (SBC), City Hall, {addr}\n"
             f"• **Business Hours:** {hours}\n"
             f"• **Phone:** {phone}\n"
@@ -910,52 +1114,70 @@ def _format_eligibility_response(p: Dict[str, Any], query: str, lang: LanguageCo
     if not is_valid_field(elig):
         if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
             answer = (
-                f"Available official records **{name} (Code {code})** confirm pannudhu, "
-                f"aana verified eligibility qualifications kidaikkala.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**Eligibility:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"City of Chicago BACP ({url}) check panni verify pannunga [Source 1]."
             )
         elif lang == LanguageCode.TAMIL:
             answer = (
-                f"**{name} (Code {code})** பற்றிய தகவல் உள்ளது, ஆனால் சரிபார்க்கப்பட்ட தகுதி வரம்புகள் இல்லை.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**தகுதி வரம்புகள்:**\n"
+                f"தகவல் தற்போது சரிபார்க்கப்பட்ட தரவுத்தளத்தில் இல்லை.\n\n"
                 f"BACP இணையதளத்தை ({url}) பார்க்கவும் [Source 1]."
             )
         elif lang == LanguageCode.SINHALA:
             answer = (
-                f"**{name} (Code {code})** පිළිබඳ නිල වාර්තා ඇත, නමුත් සුදුසුකම් නිර්ණායක නොමැත.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**සුදුසුකම්:**\n"
+                f"වත්මන් නිල දත්ත ගබඩාවේ තොරතුරු නොමැත.\n\n"
                 f"BACP වෙබ් අඩවිය ({url}) පරීක්ෂා කරන්න [Source 1]."
             )
         else:
             answer = (
-                f"The available official records confirm the **{name} (Code {code})**, "
-                f"but do not currently provide verified eligibility qualifications.\n\n"
+                f"**{name} — Code {code}**\n\n"
+                f"**Eligibility:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"Please consult the City of Chicago BACP directly at {url} for current qualification rules. [Source 1]"
             )
         return answer, False, "Eligibility criteria unavailable in official records."
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
         answer = (
-            f"**{name} (Code {code})** eligibility criteria: {elig}.\n\n"
-            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+            f"**{name} — Code {code}**\n\n"
+            f"**Eligibility:**\n"
+            f"{elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*\n\n"
+            f"If you want, I can also show the required documents, fees, application procedure, and renewal details."
         )
     elif lang == LanguageCode.TAMIL:
         answer = (
-            f"**{name} (Code {code})** தகுதி வரம்புகள்: {elig}.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**தகுதி வரம்புகள்:**\n"
+            f"{elig}.\n\n"
             f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
         )
     elif lang == LanguageCode.SINHALA:
         answer = (
-            f"**{name} (Code {code})** සඳහා සුදුසුකම්: {elig}.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**සුදුසුකම්:**\n"
+            f"{elig}.\n\n"
             f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
         )
     elif lang == LanguageCode.SINGLISH:
         answer = (
-            f"**{name} (Code {code})** sudusukam: {elig}.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Eligibility:**\n"
+            f"{elig}.\n\n"
             f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
         )
     else:
         answer = (
-            f"A **{name} (Code {code})** is intended for {elig}.\n\n"
-            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+            f"**{name} — Code {code}**\n\n"
+            f"**Eligibility:**\n"
+            f"A **{name} (Code {code})** is intended for {elig} (aged 18 or older where required for general business operations).\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*\n\n"
+            f"If you want, I can also show the required documents, fees, application procedure, and renewal details."
         )
     return answer, True, "Eligibility criteria provided from official records."
 
@@ -973,22 +1195,33 @@ def _format_renewal_response(p: Dict[str, Any], query: str, lang: LanguageCode =
     if asking_for_deadline:
         if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
             answer = (
+                f"**{name} — Code {code}**\n\n"
+                f"**Renewal:**\n"
                 f"Available records-la **{name} (Code {code})**-ku verified renewal deadline kidaikkala.\n\n"
+                f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
                 f"General-a expiration date-ku munnadi renew panna vendum. "
                 f"City of Chicago BACP ({url}) check pannunga [Source 1]."
             )
         elif lang == LanguageCode.TAMIL:
             answer = (
+                f"**{name} — Code {code}**\n\n"
+                f"**புதுப்பித்தல்:**\n"
                 f"**{name} (Code {code})** உரிமத்திற்கான புதுப்பித்தல் கடைசி தேதி பற்றிய தகவல் இல்லை.\n\n"
+                f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
                 f"காலாவதியாகும் முன் BACP ({url}) மூலம் புதுப்பிக்கவும் [Source 1]."
             )
         elif lang == LanguageCode.SINHALA:
             answer = (
+                f"**{name} — Code {code}**\n\n"
+                f"**අලුත් කිරීම:**\n"
                 f"**{name} (Code {code})** සඳහා නිශ්චිත අලුත් කිරීමේ අවසන් දිනයක් නොමැත.\n\n"
+                f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
                 f"කල් ඉකුත්වීමට පෙර BACP ({url}) පරීක්ෂා කරන්න [Source 1]."
             )
         else:
             answer = (
+                f"**{name} — Code {code}**\n\n"
+                f"**Renewal:**\n"
                 f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
                 f"Licenses generally require renewal prior to their expiration date. "
                 f"Please verify your specific license renewal deadline with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) at {url} [Source 1]."
@@ -998,24 +1231,32 @@ def _format_renewal_response(p: Dict[str, Any], query: str, lang: LanguageCode =
     if not is_valid_field(term) and not is_valid_field(period):
         if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
             answer = (
+                f"**{name} — Code {code}**\n\n"
+                f"**Renewal:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
                 f"Naan **{name} (Code {code})** pathina information kandupidithen, "
                 f"aana renewal process alladhu deadline pathi verified information kidaikkala. "
                 f"BACP-ai thodarpu kolla mudiyum [Source 1]."
             )
         elif lang == LanguageCode.TAMIL:
             answer = (
-                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் புதுப்பித்தல் விவரங்கள் இல்லை. "
+                f"**{name} — Code {code}**\n\n"
+                f"**புதுப்பித்தல்:**\n"
+                f"தகவல் தற்போது சரிபார்க்கப்பட்ட தரவுத்தளத்தில் இல்லை.\n\n"
                 f"BACP-ஐத் தொடர்பு கொள்ளவும் [Source 1]."
             )
         elif lang == LanguageCode.SINHALA:
             answer = (
-                f"**{name} (Code {code})** පිළිබඳ තොරතුරු ලැබුණි, නමුත් අලුත් කිරීමේ විස්තර නොමැත [Source 1]."
+                f"**{name} — Code {code}**\n\n"
+                f"**අලුත් කිරීම:**\n"
+                f"වත්මන් නිල දත්ත ගබඩාවේ තොරතුරු නොමැත [Source 1]."
             )
         else:
             answer = (
-                f"I found information about the **{name} (Code {code})**, "
-                f"but the available official records do not provide enough verified information about the renewal process or renewal deadline. "
-                f"I don't want to guess. Please verify the current renewal requirements with the City of Chicago Department of Business Affairs and Consumer Protection."
+                f"**{name} — Code {code}**\n\n"
+                f"**Renewal:**\n"
+                f"Information not available in the current verified knowledge base.\n\n"
+                f"Please verify current renewal requirements with the City of Chicago Department of Business Affairs and Consumer Protection."
             )
         return answer, False, "Renewal details unavailable in retrieved records."
 
@@ -1024,31 +1265,41 @@ def _format_renewal_response(p: Dict[str, Any], query: str, lang: LanguageCode =
 
     if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
         answer = (
-            f"**{name} (Code {code})** license **{term_str}** valid-aaga irukkum, matrum **{period_str}** renew panna vendum.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**Renewal:**\n"
+            f"License **{term_str}** valid-aaga irukkum, matrum **{period_str}** renew panna vendum.\n\n"
             f"**Renewal Steps:**\n"
             f"1. City of Chicago holds, debt, matrum building violations illai enbadhai verify pannunga.\n"
-            f"2. Expiration-ku munnadi Chicago Business Direct ({url}) vazhiya renewal application matrum fee submit pannunga [Source 1]."
+            f"2. Expiration-ku munnadi Chicago Business Direct ({url}) vazhiya renewal application matrum fee submit pannunga [Source 1].\n\n"
+            f"If you want, I can also show the overview, eligibility, required documents, fees, or application procedure."
         )
     elif lang == LanguageCode.TAMIL:
         answer = (
-            f"**{name} (Code {code})** உரிமம் **{term_str}** செல்லுபடியாகும், மேலும் **{period_str}** புதுப்பிக்கப்பட வேண்டும்.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**புதுப்பித்தல்:**\n"
+            f"உரிமம் **{term_str}** செல்லுபடியாகும், மேலும் **{period_str}** புதுப்பிக்கப்பட வேண்டும்.\n\n"
             f"**புதுப்பித்தல் படிகள்:**\n"
             f"1. நிலுவைக் கட்டணங்கள் மற்றும் விதிமீறல்கள் இல்லை என்பதை உறுதிப்படுத்தவும்.\n"
             f"2. காலாவதியாகும் முன் Chicago Business Direct ({url}) மூலம் புதுப்பித்தல் விண்ணப்பத்தை சமர்ப்பிக்கவும் [Source 1]."
         )
     elif lang == LanguageCode.SINHALA:
         answer = (
-            f"**{name} (Code {code})** බලපත්‍රය **{term_str}** වලංගු වන අතර, **{period_str}** අලුත් කළ යුතුය.\n\n"
+            f"**{name} — Code {code}**\n\n"
+            f"**අලුත් කිරීම:**\n"
+            f"බලපත්‍රය **{term_str}** වලංගු වන අතර, **{period_str}** අලුත් කළ යුතුය.\n\n"
             f"**අලුත් කිරීමේ පියවර:**\n"
             f"1. කිසිදු නගර ණය හෝ නීතිමය ගැටළු නොමැති බව තහවුරු කරන්න.\n"
             f"2. කල් ඉකුත්වීමට පෙර Chicago Business Direct ({url}) හරහා අයදුම් කරන්න [Source 1]."
         )
     else:
         answer = (
+            f"**{name} — Code {code}**\n\n"
+            f"**Renewal:**\n"
             f"A **{name} (Code {code})** is valid for **{term_str}**, and renewal is required **{period_str}**.\n\n"
             f"**Renewal Steps:**\n"
             f"1. Check that all City of Chicago holds, debt, and building violations are resolved.\n"
-            f"2. Submit your renewal application and fee online via Chicago Business Direct ({url}) prior to expiration [Source 1]."
+            f"2. Submit your renewal application and fee online via Chicago Business Direct ({url}) prior to expiration [Source 1].\n\n"
+            f"If you want, I can also show the overview, eligibility, required documents, fees, or application procedure."
         )
     return answer, True, "Renewal terms and validity provided from official records."
 

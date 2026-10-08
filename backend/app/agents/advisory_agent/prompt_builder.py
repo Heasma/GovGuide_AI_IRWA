@@ -54,6 +54,7 @@ INTENT_SECTION_MAP = {
     "source_verification": ["legal_framework", "overview"],
     "office_information": ["contact_information", "responsible_office"],
     "renewal": ["renewal", "overview"],
+    "license_catalog": ["overview", "eligibility"],
     "service_lookup": ["overview", "eligibility"],
     "service_information": ["overview", "eligibility"],
     "license_identification": ["overview", "eligibility"],
@@ -111,6 +112,15 @@ def _get_intent_instruction(intent_name: str) -> str:
         return (
             "INTENT: OFFICE & CONTACT INFORMATION\n"
             "- Provide Department name (BACP), Small Business Center address (121 N. LaSalle St., Room 800), hours, and phone."
+        )
+    elif intent_name in ("license_catalog", "available_business_licenses"):
+        return (
+            "INTENT: LICENSE CATALOG / AVAILABLE BUSINESS LICENSES\n"
+            "- The user is asking for a list/catalog of available business licenses or government services.\n"
+            "- Present a structured list of distinct business licenses available in the Knowledge Base evidence.\n"
+            "- For each license, include its name, code, and a brief summary.\n"
+            "- Conclude by inviting the user to specify their business type so you can help identify the most relevant option.\n"
+            "- Do NOT invent licenses not present in the retrieved evidence."
         )
     elif intent_name in ("service_lookup", "service_information", "license_identification"):
         return (
@@ -202,7 +212,10 @@ def build_prompt(
             return 99
 
         sorted_results = sorted(raw_results, key=_sort_key)
-        selected_results = sorted_results[:max_evidence_chunks]
+        if intent_val in ("license_catalog", "available_business_licenses") or "license_catalog" in intents_list:
+            selected_results = sorted_results
+        else:
+            selected_results = sorted_results[:max_evidence_chunks]
         evidence_items = []
 
         for i, item in enumerate(selected_results, start=1):

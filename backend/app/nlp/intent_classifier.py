@@ -77,15 +77,90 @@ _INTENT_PATTERNS: Dict[Intent, List[str]] = {
         "bacp office", "department location", "who to call", "contact information",
         "office", "location", "address", "where is", "hours", "contact",
     ],
+    Intent.LICENSE_CATALOG: [
+        "what business licenses are available", "what business licences are available",
+        "what licenses are available", "what licences are available",
+        "available business licenses", "available business licences",
+        "available licenses", "available licences",
+        "show me all available business licenses", "show me all available business licences",
+        "show all available business licenses", "show all available business licences",
+        "show me available business licenses", "show me available business licences",
+        "show available business licenses", "show available business licences",
+        "what licenses can i apply for", "what licences can i apply for",
+        "what business license options do you have", "what business licence options do you have",
+        "what business license options", "what business licence options",
+        "what licensing options are available", "list all business licenses", "list all business licences",
+        "list of business licenses", "list of business licences",
+        "all business licenses", "all business licences",
+        "catalog of licenses", "catalog of licences",
+        "license catalog", "licence catalog",
+        "available government services", "what services are available",
+        "all available licenses", "all available licences",
+        "what business licenses can i apply for here", "what business licences can i apply for here",
+        "what business licenses are available here", "what business licences are available here",
+        "all government services", "all 56 government services",
+        "56 government service summary", "56 government services summary",
+        "government service summary", "government services summary",
+        "list all government services", "list of all government services",
+        "show all 56 services", "show all 56 government services",
+        "show all services", "show all government services",
+        "business license services summary", "all business license services",
+        "all license summary", "all business license types",
+        "give me summary of all government services",
+        "summary of all government services", "summary of 56 government services",
+        "i need 56 government service summary", "i need 56 government services summary",
+        "i need government service summary", "i need government services summary",
+        "enna enna government services irukku", "56 services summary venum",
+        "56 government service oda summary venum", "56 government services summary venum",
+        "enna enna business license inga edukkalam", "enna enna business licence inga edukkalam",
+        "enna enna business license inga edulkkalam", "enna enna business licence inga edulkkalam",
+        "enna enna license inga edukkalam", "enna enna licence inga edukkalam",
+        "inga enna enna business license irukku", "inga enna enna business licence irukku",
+        "enna enna business license", "enna enna business licence",
+        "enna enna license", "enna enna licence",
+    ],
     Intent.SERVICE_LOOKUP: [
-        "what license do i need for", "what license do i need", "which license is required", "what license",
-        "which license", "license for", "types of licenses",
-        "what is a", "what is the", "tell me about", "information about", "find service",
-        "look up", "search for", "business license", "retail food",
+        "what is license", "what is licence", "what is service", "what is code",
+        "tell me about", "information about", "details for", "details about",
+        "service details", "license details", "licence details", "service information",
+        "what license do i need for", "what licence do i need for",
+        "what license do i need", "what licence do i need",
+        "which license is required", "which licence is required",
+        "what license", "what licence", "which license", "which licence",
+        "license for", "licence for", "types of licenses", "types of licences",
+        "what is a", "what is the", "find service",
+        "look up", "search for", "business license", "business licence", "retail food",
+        "pathi sollunga", "details venum", "service details venum",
     ],
 }
 
 _INTENT_REGEX_MAP: List[Tuple[Intent, str]] = [
+    (
+        Intent.LICENSE_CATALOG,
+        r"\b("
+        r"what\s+(?:business\s+)?licen[cs]es?\s+(?:are\s+)?available|"
+        r"what\s+(?:business\s+)?licen[cs]es?\s+can\s+i\s+(?:apply\s+for|get|obtain)|"
+        r"show\s+(?:me\s+)?(?:all\s+)?available\s+(?:business\s+)?licen[cs]es?|"
+        r"what\s+(?:business\s+)?licensing\s+options|"
+        r"what\s+(?:business\s+)?licen[cs]e\s+options|"
+        r"list\s+(?:all\s+)?(?:business\s+)?(?:licen[cs]es?|government\s+services?|services?)|"
+        r"list\s+of\s+(?:all\s+)?(?:business\s+)?(?:licen[cs]es?|government\s+services?|services?)|"
+        r"all\s+available\s+(?:business\s+)?(?:licen[cs]es?|government\s+services?|services?)|"
+        r"available\s+(?:business\s+)?(?:licen[cs]es?|government\s+services?|services?)|"
+        r"what\s+(?:government\s+)?services\s+are\s+available|"
+        r"available\s+services|"
+        r"what\s+licen[cs]es?\s+do\s+you\s+(?:have|support|offer)|"
+        r"what\s+are\s+(?:the\s+)?available\s+(?:business\s+)?licen[cs]es?|"
+        r"what\s+business\s+licen[cs]es?\s+(?:can\s+i\s+apply\s+for\s+here|are\s+available\s+here)|"
+        r"(?:i\s+need\s+)?(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)\s+(?:summary|options|catalog|list|overview)|"
+        r"(?:give\s+me\s+)?(?:a\s+)?summary\s+of\s+(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)|"
+        r"show\s+(?:me\s+)?(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)|"
+        r"all\s+(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)(?:\s+types|\s+summary|\s+services)?|"
+        r"all\s+(?:business\s+)?licen[cs]e\s+types|"
+        r"(?:(?:inga|ingga|inge|ingey)\s+)?(?:enna+\s*[-]?\s*enna+|enna+enna+|yena+\s*[-]?\s*yena+|yena+yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)|"
+        r"(?:inga|ingga|inge|ingey)\s+(?:enna+|yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)"
+        r")\b"
+    ),
     (
         Intent.GEOGRAPHIC_ELIGIBILITY,
         r"\b(currently\s+in\s+sri\s+lanka|in\s+sri\s+lanka|from\s+sri\s+lanka|living\s+in\s+sri\s+lanka|living\s+outside|from\s+abroad|outside\s+the\s+(?:us|united\s+states)|foreign\s+national|foreign\s+citizen|apply\s+remotely|apply\s+from\s+abroad|apply\s+from\s+another\s+country|international\s+applicant|non-resident|living\s+in\s+canada|living\s+in\s+india|living\s+in\s+the\s+uk|out\s+of\s+country)\b"
@@ -100,7 +175,26 @@ _INTENT_REGEX_MAP: List[Tuple[Intent, str]] = [
     ),
     (
         Intent.SERVICE_LOOKUP,
-        r"\b(what\s+licenses?\s+do\s+i\s+need|which\s+licenses?\s+(?:is\s+)?required|what\s+licenses?|which\s+licenses?|licenses?\s+for|types\s+of\s+licenses|what\s+permits?\s+do\s+i\s+need|which\s+permits?|what\s+permits?|what\s+licenses?\s+is\s+needed|what\s+type\s+of\s+licenses?|what\s+kind\s+of\s+licenses?|what\s+licenses?\s+applies|which\s+licenses?\s+(?:is\s+)?(?:perfect|suitable|best|needed|required|right|good)\s+for\s+me|which\s+licenses?\s+(?:do\s+i\s+need|should\s+i\s+get)|start\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|open\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business)\b"
+        r"\b("
+        r"what\s+is\s+(?:the\s+)?(?:business\s+)?licen[cs]e(?:\s+code)?\s*[0-9]{4}|"
+        r"what\s+is\s+licen[cs]e\s*[0-9]{4}|"
+        r"what\s+is\s+service\s*[0-9]{4}|"
+        r"tell\s+me\s+about|"
+        r"information\s+about|"
+        r"details\s+(?:for|about|of)|"
+        r"what\s+licenses?\s+do\s+i\s+need|"
+        r"which\s+licenses?\s+(?:is\s+)?required|"
+        r"what\s+licenses?|which\s+licenses?|licenses?\s+for|types\s+of\s+licenses|"
+        r"what\s+permits?\s+do\s+i\s+need|which\s+permits?|what\s+permits?|"
+        r"what\s+licenses?\s+is\s+needed|what\s+type\s+of\s+licenses?|what\s+kind\s+of\s+licenses?|"
+        r"what\s+licenses?\s+applies|"
+        r"which\s+licenses?\s+(?:is\s+)?(?:perfect|suitable|best|needed|required|right|good)\s+for\s+me|"
+        r"which\s+licenses?\s+(?:do\s+i\s+need|should\s+i\s+get)|"
+        r"start\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|"
+        r"open\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|"
+        r"(?:pathi|pathina)\s+(?:sollunga|solla)|"
+        r"service\s+details\s+(?:venum|vendum|theva|thevai|kudunga)"
+        r")\b"
     ),
     (
         Intent.FEES,

@@ -37,20 +37,60 @@ _EXACT_OR_IDIOMATIC_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (re.compile(r"බලපත්‍රය\s+අලුත්\s+කරන්නේ\s+කෙසේද\??", re.I), "how to renew license?"),
     (re.compile(r"ව්‍යාපාර\s+බලපත්‍ර\s+ක්‍රියාවලිය\s+මොකක්ද\??", re.I), "what is the procedure for a business license?"),
 
+    # "enna enna business license inga edulkkalam / edukalam / irukku" -> "what business licenses are available here"
+    (
+        re.compile(r"^\s*(?:(?:inga|ingey|inge|ingga)\s+)?(?:enna+\s*[-]?\s*enna+|enna+enna+|yena+\s*[-]?\s*yena+|yena+yena+|enna+|yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?(?:\s+(?:inga|ingey|inge|ingga))?\s*(?:edulkkalam|edukkalam|edukalam|edulkkalaam|edukkalaam|edukalaam|edukka\s+mudiyum|vanga\s+mudiyum|vangalam|vangikalam|irukku|kidaikkum|available)?\??\s*$", re.I),
+        "what business licenses are available here"
+    ),
+    (
+        re.compile(r"\b(?:(?:inga|ingey|inge|ingga)\s+)?(?:enna+\s*[-]?\s*enna+|enna+enna+|yena+\s*[-]?\s*yena+|yena+yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?(?:\s+(?:inga|ingey|inge|ingga))?\s*(?:edulkkalam|edukkalam|edukalam|edulkkalaam|edukkalaam|edukalaam|edukka\s+mudiyum|vanga\s+mudiyum|vangalam|vangikalam|irukku|kidaikkum|available)\??", re.I),
+        "what business licenses are available here"
+    ),
+    (
+        re.compile(r"\b(?:inga|ingey|inge|ingga)\s+(?:enna+\s*[-]?\s*enna+|enna+enna+|enna+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?\s*(?:edulkkalam|edukkalam|edukalam|edulkkalaam|edukkalaam|edukalaam|irukku|kidaikkum|available)\??", re.I),
+        "what business licenses are available here"
+    ),
+    (
+        re.compile(r"\b(?:enna+\s*[-]?\s*enna+|yena+\s*[-]?\s*yena+|enna+enna+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?\s*(?:irukku|kidaikkum|available|options)\??", re.I),
+        "what business licenses are available"
+    ),
+    (
+        re.compile(r"^\s*(?:56\s+)?(?:government\s+)?services?\s*(?:oda\s+)?summary\s*(?:venum|vendum|kudunga|theva|thevai)\??\s*$", re.I),
+        "i need 56 government services summary"
+    ),
+    (
+        re.compile(r"\b(?:56\s+)?(?:government\s+)?services?\s*(?:oda\s+)?summary\s*(?:venum|vendum|kudunga|theva|thevai)\??", re.I),
+        "i need 56 government services summary"
+    ),
+    (
+        re.compile(r"\b(?:available|all)\s+(?:56\s+)?(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?\s+(?:list|options|summary)\s*(?:sollunga|kudunga|kaatunga)\??", re.I),
+        "show all available business licenses"
+    ),
+    (
+        re.compile(r"இங்கு\s+என்னென்ன\s+வணிக\s+உரிமங்கள்\s+கிடைக்கும்\??", re.I),
+        "what business licenses are available here"
+    ),
+
     # "licence venum but enna business nu sollala" -> "i need a license but have not specified business type"
     (
-        re.compile(r"\blicen[cs]e\s+(?:venum|vendum|edukanum|vanganum)\s+but\s+enna\s+business\s+(?:nu|endru)?\s*sollala\??", re.I),
+        re.compile(r"\blicen[cs]e\s+(?:venum|vendum|edukanum|edukkanum|vanganum)\s+but\s+enna\s+business\s+(?:nu|endru)?\s*sollala\??", re.I),
         "i need a license but have not specified business type"
     ),
 
-    # "ennaku licence edukanum" / "ennaku licence venum" -> "i need to obtain a license"
+    # "ennaku licence edukanum" / "ennaku licence venum" / "ennaku licence edukkan" -> "i need to obtain a license"
     (
-        re.compile(r"^\s*(?:ennaku|enakku|enaku)\s+licen[cs]e\s+(?:edukanum|vanganum|venum|theva|thevai)\??\s*$", re.I),
+        re.compile(r"^\s*(?:ennaku|enakku|enaku)\s+licen[cs]e(?:s)?\s+(?:edukanum|edukkanum|edukkanam|edukkan|edukan|vanganum|venum|theva|thevai)\??\s*$", re.I),
         "i need to obtain a license"
     ),
     (
-        re.compile(r"^\s*licen[cs]e\s+(?:edukanum|vanganum|venum|theva|thevai)\??\s*$", re.I),
+        re.compile(r"^\s*licen[cs]e(?:s)?\s+(?:edukanum|edukkanum|edukkanam|edukkan|edukan|vanganum|venum|theva|thevai)\??\s*$", re.I),
         "i need to obtain a license"
+    ),
+
+    # "naan dress shop start panna poren" -> "what license is required to start a dress shop"
+    (
+        re.compile(r"^\s*(?:naan\s+)?([a-z0-9_\-\s]+?)\s+(?:start\s+panna|open\s+panna|aarambikka)\s+(?:poren|poran|mudivupanniruken)\??\s*$", re.I),
+        r"what license is required to start \1"
     ),
 
     # "food licence epdi apply pannanum" -> "how can i apply for food license"
@@ -59,9 +99,9 @@ _EXACT_OR_IDIOMATIC_PATTERNS: List[Tuple[re.Pattern, str]] = [
         r"how can i apply for \1"
     ),
 
-    # "food business start panna enna license venum" -> "what license is required to start a food business"
+    # "food business start panna enna license venum" / "naan restaurant open panna poren enna licence venum?" -> "what license is required to start a food business"
     (
-        re.compile(r"([a-z0-9_\-\s]+?)\s+(?:start\s+panna|open\s+panna|aarambikka)\s+(?:enna|ena|yena)\s+(?:license|licenses|licenss|lisense|licnse|urimam)\s+(?:venum|vendum|theva|thevai)\??", re.I),
+        re.compile(r"(?:naan\s+)?([a-z0-9_\-\s]+?)\s+(?:start\s+panna|open\s+panna|aarambikka)(?:\s+(?:poren|poran))?\s+(?:enna|ena|yena)\s+(?:license|licenses|licenss|lisense|licnse|licence|licences|urimam)\s+(?:venum|vendum|theva|thevai)\??", re.I),
         r"what license is required to start \1"
     ),
     # "XYZABC123 business-ku enna licence venum?" -> "what license is required for XYZABC123 business"
@@ -199,6 +239,24 @@ _TAMIL_WORD_MAP: Dict[str, str] = {
     "eduka": "to get",
     "edukurathu": "how to get",
     "edukanum": "need to get",
+    "edukkanum": "need to get",
+    "edukkanam": "need to get",
+    "edukanam": "need to get",
+    "edukkan": "need to get",
+    "edukan": "need to get",
+    "edulkkalam": "can get",
+    "edukkalam": "can get",
+    "edukalam": "can get",
+    "edulkkalaam": "can get",
+    "edukkalaam": "can get",
+    "edukalaam": "can get",
+    "inga": "here",
+    "ingga": "here",
+    "ingey": "here",
+    "inge": "here",
+    "licence": "license",
+    "licences": "licenses",
+    "kidaikkum": "available",
     "vaanga": "to obtain",
     "vaanguradhu": "obtaining",
     "vanga": "to obtain",
