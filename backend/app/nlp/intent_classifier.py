@@ -100,19 +100,19 @@ _INTENT_REGEX_MAP: List[Tuple[Intent, str]] = [
     ),
     (
         Intent.SERVICE_LOOKUP,
-        r"\b(what\s+license\s+do\s+i\s+need|which\s+license\s+(?:is\s+)?required|what\s+license|which\s+license|license\s+for|types\s+of\s+licenses|what\s+permit\s+do\s+i\s+need|which\s+permit|what\s+permit|what\s+license\s+is\s+needed|what\s+type\s+of\s+license|what\s+kind\s+of\s+license|what\s+license\s+applies)\b"
+        r"\b(what\s+licenses?\s+do\s+i\s+need|which\s+licenses?\s+(?:is\s+)?required|what\s+licenses?|which\s+licenses?|licenses?\s+for|types\s+of\s+licenses|what\s+permits?\s+do\s+i\s+need|which\s+permits?|what\s+permits?|what\s+licenses?\s+is\s+needed|what\s+type\s+of\s+licenses?|what\s+kind\s+of\s+licenses?|what\s+licenses?\s+applies|which\s+licenses?\s+(?:is\s+)?(?:perfect|suitable|best|needed|required|right|good)\s+for\s+me|which\s+licenses?\s+(?:do\s+i\s+need|should\s+i\s+get)|start\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|open\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business)\b"
     ),
     (
         Intent.FEES,
-        r"\b(fees?\s+for|how\s+much\s+(?:is|does|do|to)|cost\s+of|fee\s+schedule|pricing|payment|pay|\$|\bfees?\b|\bcost\b|\bprice\b|\bcharges?\b)\b"
+        r"\b(fees?\s+for|how\s+much|cost\s+of|fee\s+schedule|pricing|payment|pay|\$|\bfees?\b|\bcost\b|\bprice\b|\bcharges?\b)\b"
     ),
     (
         Intent.REQUIRED_DOCUMENTS,
-        r"\b(what\s+documents|what\s+paperwork|what\s+papers|required\s+documents?|documents?\s+(?:are\s+)?required|documents?\s+(?:are\s+)?needed|paperwork\s+required|documents?\s+checklist|what\s+do\s+i\s+need\s+to\s+bring|\bdocuments?\b|\bpaperwork\b|\bforms?\b|\bidentification\b|\bid\s+proof\b|\blease\b|\baffidavit\b|\bcertificate\s+of\s+occupancy\b|\bzoning\s+certificate\b|\bfloor\s+plan\b|\binspection\s+report\b)\b"
+        r"\b(what\s+documents|what\s+paperwork|what\s+papers|required\s+documents?|documents?\s+(?:are\s+)?required|documents?\s+(?:are\s+)?needed|paperwork\s+required|documents?\s+checklist|what\s+do\s+i\s+need\s+to\s+bring|\bdocuments?\b|\bpaperwork\b|\bforms?\b|\bidentification\b|\bid\s+proof\b|\blease\b|\baffidavit\b|\bcertificate\s+of\s+occupancy\b|\bzoning\s+certificate\b|\bfloor\s+plan\b|\binspection\s+report\b|\brequirements?\b)\b"
     ),
     (
         Intent.APPLICATION_PROCEDURE,
-        r"\b(how\s+(?:can|do)\s+i\s+apply|how\s+to\s+apply|how\s+(?:can|do)\s+i\s+get|how\s+to\s+get|what\s+are\s+the\s+steps|steps\s+to\s+apply|steps\s+for\s+application|steps\s+to|process\s+for|application\s+procedure|application\s+process|where\s+do\s+i\s+submit|online\s+application|chicago\s+business\s+direct|walk-in|in\s+person\s+application)\b"
+        r"\b(how\s+(?:can|do)\s+i\s+apply|how\s+to\s+apply|how\s+(?:can|do)\s+i\s+get|how\s+to\s+get|how\s+(?:can|do)\s+i\s+obtain|how\s+to\s+obtain|how\s+(?:can|do)\s+i\s+acquire|what\s+are\s+the\s+steps|steps\s+to\s+apply|steps\s+for\s+application|steps\s+to|process\s+for|application\s+procedure|application\s+process|what\s+is\s+the\s+procedure|procedure\s+for|procedure\s+to|\bprocedures?\b|where\s+do\s+i\s+submit|online\s+application|chicago\s+business\s+direct|walk-in|in\s+person\s+application)\b"
     ),
     (
         Intent.RENEWAL,
@@ -124,19 +124,20 @@ _INTENT_REGEX_MAP: List[Tuple[Intent, str]] = [
     ),
     (
         Intent.OFFICE_INFORMATION,
-        r"\b(where\s+is\s+the\s+office|where\s+is\s+city\s+hall|office\s+address|office\s+hours|phone\s+number|small\s+business\s+center|city\s+hall|room\s+800|bacp\s+office|department\s+location|who\s+to\s+call|contact\s+information|\boffice\b|\blocation\b|\baddress\b|where\s+is|\bhours\b|\bcontact\b)\b"
+        r"\b(where\s+is\s+the\s+office|where\s+is\s+city\s+hall|where\s+(?:should|can|do)\s+i\s+go|where\s+to\s+go|where\s+should\s+we\s+go|office\s+address|office\s+hours|phone\s+number|small\s+business\s+center|city\s+hall|room\s+800|bacp\s+office|department\s+location|who\s+to\s+call|contact\s+information|\boffice\b|\blocation\b|\baddress\b|\bwhere\b|\bhours\b|\bcontact\b)\b"
     ),
 ]
 
 _CONVERSATION_TYPE_PATTERNS = [
     ("GOODBYE", [
-        r"\b(thank\s+you,?\s*goodbye|thanks,?\s*goodbye|thank\s+you\s+and\s+goodbye|goodbye|bye\s+bye|bye|see\s+you|have\s+a\s+(?:great|good|nice)\s+day|farewell)\b"
+        r"^(thank\s+you,?\s*goodbye|thanks,?\s*goodbye|thank\s+you\s+and\s+goodbye|goodbye|bye\s+bye|bye|see\s+you|have\s+a\s+(?:great|good|nice)\s+day|farewell)[!.]*$"
     ]),
     ("THANKS", [
-        r"\b(thank\s+you\s+for\s+(?:your\s+|the\s+)?information|thanks\s+for\s+(?:your\s+|the\s+)?information|thank\s+you\s+for\s+(?:your\s+|the\s+)?help|thanks\s+for\s+(?:your\s+|the\s+)?help|great,?\s*thank\s+you|great,?\s*thanks|thank\s+you\s+so\s+much|thanks\s+so\s+much|many\s+thanks|thank\s+you\s+very\s+much|i\s+appreciate\s+(?:your\s+)?help|i\s+appreciate\s+it|appreciate\s+it|much\s+appreciated|thank\s+you|thanks)\b"
+        r"^(thank\s+you\s+for\s+(?:your\s+|the\s+)?information|thanks\s+for\s+(?:your\s+|the\s+)?information|thank\s+you\s+for\s+(?:your\s+|the\s+)?help|thanks\s+for\s+(?:your\s+|the\s+)?help|great,?\s*thank\s+you|great,?\s*thanks|thank\s+you\s+so\s+much|thanks\s+so\s+much|many\s+thanks|thank\s+you\s+very\s+much|i\s+appreciate\s+(?:your\s+)?help|i\s+appreciate\s+it|appreciate\s+it|much\s+appreciated|thank\s+you|thanks)[!.]*$"
     ]),
     ("ACKNOWLEDGEMENT", [
-        r"\b(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|okay,?\s*got\s+it|ok,?\s*got\s+it|thanks,?\s*got\s+it|thank\s+you,?\s*got\s+it|got\s+it,?\s*thanks|got\s+it,?\s*thank\s+you|that'?s\s+(?:very\s+)?helpful|that\s+is\s+(?:very\s+)?helpful|this\s+is\s+(?:very\s+)?helpful|got\s+it|understood|alright|all\s+right|okay|ok|makes\s+sense|perfect|sounds\s+good|cool)\b"
+        r"^(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|okay,?\s*got\s+it|ok,?\s*got\s+it|thanks,?\s*got\s+it|thank\s+you,?\s*got\s+it|got\s+it,?\s*thanks|got\s+it,?\s*thank\s+you|got\s+it|understood|alright|all\s+right|okay|ok|makes\s+sense|perfect|sounds\s+good|cool)[!.]*$",
+        r"\b(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|that'?s\s+(?:very\s+)?helpful|that\s+is\s+(?:very\s+)?helpful|this\s+is\s+(?:very\s+)?helpful)\b"
     ]),
     ("GREETING", [
         r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings|hi\s+there|hello\s+there|howdy)[!.]*$"
@@ -144,15 +145,25 @@ _CONVERSATION_TYPE_PATTERNS = [
 ]
 
 _SUBSTANTIVE_QUESTION_PATTERNS = [
-    r"\b(what\s+license|which\s+license|license\s+for|how\s+much|cost|fee|fees|price|pay|pricing)\b",
+    r"\b(what\s+licenses?|which\s+licenses?|licenses?\s+for|how\s+much|cost|fee|fees|price|pay|pricing)\b",
     r"\b(document|documents|paperwork|form|forms|id\s+proof|lease|affidavit)\b",
-    r"\b(how\s+(?:can|do)\s+i\s+apply|how\s+to\s+apply|steps\s+to|application\s+process|procedure)\b",
-    r"\b(who\s+is\s+eligible|who\s+can\s+apply|am\s+i\s+eligible|do\s+i\s+qualify|criteria|qualifications)\b",
+    r"\b(how\s+(?:can|do)\s+i\s+apply|how\s+to\s+apply|steps\s+to|application\s+process|procedure|steps)\b",
+    r"\b(who\s+is\s+eligible|who\s+can\s+apply|am\s+i\s+eligible|do\s+i\s+qualify|criteria|qualifications|eligibility)\b",
     r"\b(renew|renewal|validity|expire|expiration)\b",
-    r"\b(where\s+is\s+the\s+office|city\s+hall|small\s+business\s+center|hours|phone)\b",
+    r"\b(where\s+is\s+the\s+office|city\s+hall|small\s+business\s+center|hours|phone|where\s+to\s+go|where\s+should\s+i\s+go)\b",
     r"\b(difference\s+between|compare|comparison|versus|vs)\b",
     r"\b(sri\s+lanka|abroad|outside\s+the\s+us|remotely|foreign\s+national|international\s+applicant)\b",
+    r"\b(start\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|open\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business)\b",
+    r"\b(food\s+business|restaurant|retail\s+food|business\s+license|licenses?)\b",
 ]
+
+_DOMAIN_KEYWORDS_BLOCKING_CONV = re.compile(
+    r"\b(license|licenses|licence|licences|business|food|restaurant|permit|permits|"
+    r"fee|fees|cost|price|document|documents|paperwork|form|forms|apply|applying|"
+    r"application|procedure|steps|eligibility|eligible|renew|renewal|office|address|"
+    r"location|hours|phone|start|open|where|how|which|what|who)\b",
+    re.I
+)
 
 
 def classify_conversation_type(query: str) -> Optional[str]:
@@ -178,11 +189,20 @@ def is_conversational_query(query: str) -> bool:
     if not query:
         return False
 
+    lower = query.lower().strip()
+
+    # If domain keywords are present, this is NOT a purely conversational query
+    if _DOMAIN_KEYWORDS_BLOCKING_CONV.search(lower):
+        # Unless it's an exact greeting/thanks without question structure
+        is_exact_greeting = bool(re.match(r"^(hi|hello|hey|good\s+(morning|afternoon|evening))[!.]*$", lower, re.I))
+        is_exact_thanks = bool(re.match(r"^(thank\s+you|thanks|much\s+appreciated)[!.]*$", lower, re.I))
+        if not (is_exact_greeting or is_exact_thanks):
+            return False
+
     conv_type = classify_conversation_type(query)
     if not conv_type:
         return False
 
-    lower = query.lower().strip()
     # Check if there is a substantive question embedded
     for pattern in _SUBSTANTIVE_QUESTION_PATTERNS:
         if re.search(pattern, lower, re.I):

@@ -86,6 +86,8 @@ class HybridRetriever:
         query: str,
         top_k: int = 10,
         candidate_multiplier: int = 3,
+        intent: Optional[Any] = None,
+        target_service: Optional[str] = None,
     ) -> List[HybridResult]:
         """
         Execute hybrid search using Reciprocal Rank Fusion (RRF).
@@ -93,13 +95,14 @@ class HybridRetriever:
         1. Retrieve top candidates from BM25 and Semantic retriever.
         2. Assign reciprocal rank scores: 1 / (k + rank) where rank is 1-indexed.
         3. Accumulate RRF scores per chunk.
-        4. Sort descending by fused RRF score and return top_k.
+        4. Apply intent-aware section boosting and target-service boosting.
+        5. Sort descending by fused RRF score and return top_k.
         """
         if not query or not query.strip():
             return []
 
         # Retrieve a broader candidate pool from both retrievers
-        candidate_k = max(top_k * candidate_multiplier, 20)
+        candidate_k = max(top_k * candidate_multiplier, 25)
         bm25_results = self.bm25.search(query, top_k=candidate_k)
         semantic_results = self.semantic.search(query, top_k=candidate_k)
 
@@ -128,6 +131,43 @@ class HybridRetriever:
             semantic_scores[cid] = res.score
             rrf_score = 1.0 / (self.rrf_k + rank)
             rrf_scores[cid] = rrf_scores.get(cid, 0.0) + rrf_score
+
+        # ── Intent-Aware Section Boosting & Target-Service Boosting ──────────
+        section_boost_map = {
+            "required_documents": {"required_documents": 1.35},
+            "fees": {"fees": 1.35},
+            "application_procedure": {"application_procedure": 1.35},
+            "procedure": {"application_procedure": 1.35},
+            "eligibility": {"eligibility": 1.35, "overview": 1.15},
+            "office_information": {"responsible_office": 1.35, "overview": 1.15},
+            "renewal": {"renewal": 1.35},
+            "service_lookup": {"overview": 1.25, "eligibility": 1.15},
+            "license_identification": {"overview": 1.25, "eligibility": 1.15},
+        }
+
+        intent_key = (intent.value if hasattr(intent, "value") else str(intent or "")).lower()
+        boosts = section_boost_map.get(intent_key, {})
+
+        for cid in list(rrf_scores.keys()):
+            meta = chunk_map[cid]
+            multiplier = 1.0
+            sec = (meta.section or "").lower()
+            if sec in boosts:
+                multiplier *= boosts[sec]
+
+            if target_service:
+                target_lower = target_service.lower()
+                srv_name = (meta.service_name or "").lower()
+                srv_code = (meta.service_code or "").lower()
+                if (
+                    target_lower in srv_name
+                    or srv_code in target_lower
+                    or ("food" in target_lower and "food" in srv_name)
+                    or ("limited" in target_lower and "limited" in srv_name)
+                ):
+                    multiplier *= 1.35
+
+            rrf_scores[cid] = rrf_scores[cid] * multiplier
 
         # Sort all unique candidates by accumulated RRF score descending
         sorted_chunk_ids = sorted(

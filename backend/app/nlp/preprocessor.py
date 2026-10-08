@@ -32,16 +32,20 @@ STOPWORDS: Set[str] = {
 }
 
 _EXPANSION_RULES = [
-    (r"\b(restaurant|restaurants|cafe|cafes|diner|bistro|eatery|coffee shop|bakery)\b", "retail food establishment food"),
-    (r"\b(food truck|food cart|mobile vendor)\b", "mobile food vendor peddler"),
-    (r"\b(bar|pub|tavern|brewery|alcohol|beer|wine|spirits|cocktails)\b", "consumption on premises liquor alcohol"),
-    (r"\b(smoke shop|vape|cigar|cigars|cigarettes|tobacco)\b", "retail tobacco license"),
-    (r"\b(daycare|childcare|preschool|nursery)\b", "children services facility childcare"),
-    (r"\b(mechanic|auto repair|car repair|garage|body shop)\b", "motor vehicle repair"),
-    (r"\b(music venue|concert hall|theater|arcade|bowling|nightclub|amusement)\b", "public place of amusement"),
-    (r"\b(shared kitchen|commissary)\b", "shared kitchen user supplemental"),
+    (r"\b(restaurant|restaurants|cafe|cafes|diner|bistro|eatery|coffee\s+shop)\b", "retail food establishment food 1006"),
+    (r"\b(food\s+business|food\s+establishment|food\s+service)\b", "retail food establishment food 1006"),
+    (r"\b(bakery|bakeries|cake\s+business|baking)\b", "bakery food establishment retail food 1006"),
+    (r"\b(food\s+truck|food\s+cart|mobile\s+vendor|street\s+vendor)\b", "mobile food vendor peddler 4405"),
+    (r"\b(bar|pub|tavern|brewery|alcohol|beer|wine|spirits|cocktails)\b", "consumption on premises liquor alcohol tavern 1005"),
+    (r"\b(smoke\s+shop|vape|cigar|cigars|cigarettes|tobacco)\b", "retail tobacco license 1781"),
+    (r"\b(daycare|childcare|preschool|nursery)\b", "children services facility childcare 1011"),
+    (r"\b(mechanic|auto\s+repair|car\s+repair|garage|body\s+shop)\b", "motor vehicle repair"),
+    (r"\b(music\s+venue|concert\s+hall|theater|arcade|bowling|nightclub|amusement)\b", "public place of amusement 1004"),
+    (r"\b(shared\s+kitchen|commissary)\b", "shared kitchen user supplemental"),
     (r"\b(massage|spa|masseuse)\b", "massage establishment"),
-    (r"\b(general business|store|shop|boutique|consulting|office)\b", "limited business license lbl"),
+    (r"\b(clothing\s+store|clothing\s+shop|apparel|shoe\s+store|electronics\s+store|mobile\s+phone\s+shop)\b", "limited business license lbl 1010"),
+    (r"\b(regulated\s+business(?:\s+license)?|rbl)\b", "regulated business license rbl 4404"),
+    (r"\b(general\s+business\s+license|standard\s+business\s+license|city\s+business\s+license|limited\s+business\s+license|lbl)\b", "limited business license lbl 1010"),
 ]
 
 

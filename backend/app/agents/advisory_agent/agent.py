@@ -139,11 +139,21 @@ class AdvisoryAgent:
             domain=domain_str,
         )
 
+        # ── Language Detection ────────────────────────────────────────────────
+        lang = "en"
+        if isinstance(nlp_analysis_data, dict):
+            lang = nlp_analysis_data.get("language") or "en"
+        if not lang or lang == "en":
+            from app.nlp.language_detector import resolve_query_language
+            lang = resolve_query_language(query)
+
         # ── Responsible AI: Insufficient evidence check ───────────────────────
         if not sufficient or retrieval_confidence < self._confidence_threshold:
             domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
+            from app.agents.advisory_agent.intent_formatter import get_insufficient_evidence_response
+            insufficient_ans = get_insufficient_evidence_response(lang)
             result = AdvisoryResultPayload(
-                answer=INSUFFICIENT_EVIDENCE_RESPONSE,
+                answer=insufficient_ans,
                 confidence_score=0.0,
                 confidence_label=ConfidenceLabel.INSUFFICIENT,
                 domain=domain_enum,
@@ -188,6 +198,7 @@ class AdvisoryAgent:
         from app.agents.advisory_agent.intent_formatter import (
             format_intent_response,
             calibrate_confidence_for_intent,
+            get_insufficient_evidence_response,
         )
 
         try:
@@ -203,7 +214,7 @@ class AdvisoryAgent:
         if self._is_error_output(raw_answer):
             logger.warning("llm_call_fallback_to_evidence_synthesis", raw_output=raw_answer)
             raw_answer, is_target_available, synth_explanation = format_intent_response(
-                query, intent_obj, evidence_bundle_data, intents=intents_list
+                query, intent_obj, evidence_bundle_data, intents=intents_list, language=lang
             )
         else:
             if "not currently provide a verified fee" in raw_answer.lower() or "cannot provide a fee" in raw_answer.lower():
@@ -225,8 +236,9 @@ class AdvisoryAgent:
         )
         domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
 
+        fallback_ans = get_insufficient_evidence_response(lang)
         result = AdvisoryResultPayload(
-            answer=raw_answer if validation.passed else INSUFFICIENT_EVIDENCE_RESPONSE,
+            answer=raw_answer if validation.passed else fallback_ans,
             confidence_score=final_score,
             confidence_label=label,
             domain=domain_enum,

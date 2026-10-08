@@ -16,7 +16,15 @@ class MockRetrievalEngine:
         self.should_fail = should_fail
         self.total_retrieved = total_retrieved
 
-    async def search(self, query: str, top_k: int = 10, filters: dict = None) -> EvidenceBundle:
+    async def search(
+        self,
+        query: str,
+        top_k: int = 10,
+        filters: dict = None,
+        intent: str = None,
+        target_service: str = None,
+        **kwargs,
+    ) -> EvidenceBundle:
         if self.should_fail:
             raise RuntimeError("Database connection timeout")
         if self.total_retrieved == 0:

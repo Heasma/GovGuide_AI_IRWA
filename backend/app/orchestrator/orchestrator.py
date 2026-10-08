@@ -39,7 +39,7 @@ from app.orchestrator.interaction_logger import InteractionLogger
 from app.security.prompt_injection_guard import assert_safe
 from app.schemas import QueryResponse, SourceReference
 from app.config import get_settings
-from app.agents.advisory_agent.intent_formatter import get_conversational_response
+from app.agents.advisory_agent.intent_formatter import get_conversational_response, get_clarification_response
 
 logger = structlog.get_logger(__name__)
 
@@ -117,13 +117,45 @@ class Orchestrator:
             knowledge_base_domain_supported=structured_query.is_domain_supported,
         )
 
-        # ── Step 2b: Conversational / Non-informational Fast-path ─────────────
-        is_conversational_intent = (
-            structured_query.intent in (
-                Intent.CONVERSATIONAL, Intent.THANKS, Intent.ACKNOWLEDGEMENT,
-                Intent.GOODBYE, Intent.GREETING,
+        # ── Step 2b: Ambiguous Query Clarification Fast-path ───────────────────
+        if structured_query.search_parameters.get("needs_clarification", False):
+            detected_lang = structured_query.search_parameters.get("detected_language", "en")
+            clar_type = structured_query.search_parameters.get("clarification_type")
+            clarification_answer = get_clarification_response(detected_lang, clarification_type=clar_type)
+            log.info(
+                "ambiguous_clarification_dispatched",
+                detected_language=detected_lang,
+                clarification_type=clar_type,
             )
-            or not structured_query.search_parameters.get("retrieval_required", True)
+            return QueryResponse(
+                request_id=request_id,
+                answer=clarification_answer,
+                confidence_score=0.5,
+                confidence_label=ConfidenceLabel.MEDIUM,
+                sources=[],
+                caveats=["Query is ambiguous. Clarification requested."],
+                explanation="The query requests a license or service without specifying the business type or specific service required.",
+                is_demo=False,
+                is_conversational=False,
+            )
+
+        # ── Step 2c: Conversational / Non-informational Fast-path ─────────────
+        has_substantive_intent = structured_query.intent in (
+            Intent.SERVICE_LOOKUP, Intent.SERVICE_INFORMATION, Intent.LICENSE_IDENTIFICATION,
+            Intent.ELIGIBILITY, Intent.GEOGRAPHIC_ELIGIBILITY, Intent.PROCEDURE,
+            Intent.APPLICATION_PROCEDURE, Intent.REQUIRED_DOCUMENTS, Intent.FEES,
+            Intent.RENEWAL, Intent.OFFICE_INFORMATION, Intent.COMPARISON, Intent.SOURCE_EVIDENCE
+        )
+
+        is_conversational_intent = (
+            not has_substantive_intent
+            and (
+                structured_query.intent in (
+                    Intent.CONVERSATIONAL, Intent.THANKS, Intent.ACKNOWLEDGEMENT,
+                    Intent.GOODBYE, Intent.GREETING,
+                )
+                or not structured_query.search_parameters.get("retrieval_required", True)
+            )
         )
 
         if is_conversational_intent:
@@ -191,6 +223,9 @@ class Orchestrator:
             retrieval_confidence=retrieval_confidence,
         )
 
+        detected_lang = structured_query.search_parameters.get("detected_language", "en")
+        is_multilingual = structured_query.search_parameters.get("is_multilingual", False)
+
         # Also log for backward compatibility with existing tests
         research_compat_msg = AgentMessage(
             request_id=request_id,
@@ -207,6 +242,8 @@ class Orchestrator:
                     entities=structured_query.entities,
                     expanded_query=structured_query.expanded_query,
                     keywords=structured_query.keywords,
+                    language=detected_lang,
+                    is_multilingual=is_multilingual,
                 ),
                 evidence_bundle=evidence_bundle_dict,
                 retrieval_confidence=retrieval_confidence,
@@ -224,6 +261,8 @@ class Orchestrator:
             entities=structured_query.entities,
             expanded_query=structured_query.expanded_query,
             keywords=structured_query.keywords,
+            language=detected_lang,
+            is_multilingual=is_multilingual,
         )
 
         response_task = AgentMessage(

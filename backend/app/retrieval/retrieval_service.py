@@ -10,6 +10,7 @@ Coordinates the complete information retrieval pipeline:
 6. Structured EvidenceBundle assembly
 """
 
+import re
 from typing import Any, Dict, List, Optional
 import structlog
 
@@ -29,6 +30,51 @@ from app.orchestrator.message_schema import (
 )
 
 logger = structlog.get_logger(__name__)
+
+
+def extract_distinguishing_terms(query: str) -> List[str]:
+    """
+    Extracts informative, non-stopword tokens from the user query.
+    Used to verify that retrieved evidence actually contains the subject requested.
+    """
+    generic_stops = {
+        # English grammatical and functional stop words
+        "what", "is", "the", "for", "how", "to", "apply", "get", "need", "obtain", "a", "an", "and", "or",
+        "in", "of", "on", "at", "by", "with", "about", "from", "do", "does", "did", "i", "can", "could",
+        "should", "would", "shall", "will", "may", "might", "must", "where", "when", "why", "who", "whom",
+        "which", "whose", "are", "am", "be", "been", "being", "was", "were", "have", "has", "had", "having",
+        "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not",
+        "only", "own", "same", "so", "than", "too", "very", "just", "now", "into", "through", "during",
+        "before", "after", "above", "below", "up", "down", "out", "off", "over", "under", "again", "further",
+        "then", "once", "here", "there",
+        # Common domain nouns, verbs, and inflections
+        "business", "license", "licence", "licenses", "licences", "licensing", "licensed",
+        "city", "chicago", "permit", "permits", "permitting", "permitted",
+        "services", "service", "requirement", "requirements", "require", "requires", "required", "requiring",
+        "information", "details", "official", "process", "processes", "processing", "processed",
+        "application", "procedure", "procedures", "step", "steps", "fee", "fees", "cost", "pricing",
+        "documents", "document", "documentation", "eligibility", "eligible", "renewal", "renew", "renewing",
+        "office", "department", "bacp", "type", "types",
+        "you", "your", "my", "me", "we", "us", "they", "them",
+        "start", "starting", "starts", "started", "open", "opening", "opens", "opened",
+        "want", "wants", "wanted", "wanting", "like", "likes", "liked",
+        "tell", "telling", "tells", "told", "much", "many",
+        "give", "giving", "gives", "gave", "please", "help", "helping", "helps", "helped",
+        "new", "suitable", "perfect", "good", "best", "right",
+        "apply", "applying", "applies", "applied", "applicant", "applicants",
+        "obtain", "obtaining", "obtains", "obtained", "get", "getting", "gets", "got",
+        "know", "knowing", "knows", "knew", "known", "guide", "guiding", "guides", "guidance",
+        "take", "taking", "takes", "took", "taken",
+        # Thanglish / Tamil / Sinhala functional particles
+        "ennaku", "enakku", "naan", "unga", "ungalluku", "enga", "engae", "epdi", "edukka",
+        "edukurathu", "edukanum", "vanganum", "enna", "ena", "venum", "theva", "thevai",
+        "panna", "pannanum", "pannum", "poren", "podanum", "onnu", "ondu", "oru", "kudunga",
+        "sollunga", "kidaikkala", "kidaikkum", "illai", "enda", "ennaen", "pathina", "pathi",
+        "madhiri", "sambanthapata", "theriya", "solla", "vekkara", "irukkuma", "panradhu",
+        "mona", "oyata", "karanna", "ona", "wage", "kiyanna", "wisthara", "ganna", "puluwan",
+    }
+    tokens = re.findall(r"\b[a-zA-Z0-9_-]+\b", query.lower())
+    return [t for t in tokens if t not in generic_stops and len(t) > 2]
 
 
 class RetrievalService:
@@ -99,6 +145,8 @@ class RetrievalService:
         query: str,
         top_k: Optional[int] = None,
         mode: Optional[str] = None,
+        intent: Optional[Any] = None,
+        target_service: Optional[str] = None,
     ) -> EvidenceBundle:
         """
         Execute full retrieval pipeline and return an EvidenceBundle.
@@ -107,6 +155,8 @@ class RetrievalService:
             query:  Raw user query.
             top_k:  Number of results to retrieve (default: settings.RETRIEVAL_TOP_K).
             mode:   Retrieval mode ("hybrid" | "bm25" | "semantic").
+            intent: Detected intent enum or string for section boosting.
+            target_service: Target service name or code for service boosting.
 
         Returns:
             EvidenceBundle with verified source attribution and confidence score.
@@ -116,7 +166,8 @@ class RetrievalService:
         expanded = expand_query(clean_query)
         from app.nlp.intent_classifier import classify_intent, classify_intents
         classified_intents = classify_intents(clean_query)
-        intent = classified_intents[0].value if hasattr(classified_intents[0], "value") else str(classified_intents[0])
+        detected_intent = intent or classified_intents[0]
+        intent_val = detected_intent.value if hasattr(detected_intent, "value") else str(detected_intent)
         intents_list = [i.value if hasattr(i, "value") else str(i) for i in classified_intents]
 
         if not self.is_indexed:
@@ -125,7 +176,7 @@ class RetrievalService:
         if not clean_query or not self.is_indexed:
             return EvidenceBundle(
                 query=query,
-                intent=intent,
+                intent=intent_val,
                 intents=intents_list,
                 total_retrieved=0,
                 confidence=0.0,
@@ -140,6 +191,7 @@ class RetrievalService:
         # Execute search based on mode
         raw_candidates = []
         if retrieval_mode == "bm25":
+            norm_query = normalize_for_retrieval(expanded)
             bm25_res = self.bm25_retriever.search(norm_query, top_k=k)
             for r in bm25_res:
                 raw_candidates.append(r)
@@ -149,12 +201,83 @@ class RetrievalService:
                 raw_candidates.append(r)
         else:  # hybrid (default)
             retrieval_mode = "hybrid"
-            hybrid_res = self.hybrid_retriever.search(expanded, top_k=k)
+            hybrid_res = self.hybrid_retriever.search(
+                expanded,
+                top_k=k,
+                intent=detected_intent,
+                target_service=target_service,
+            )
             for r in hybrid_res:
                 raw_candidates.append(r)
 
         # ── Source Attribution Validation ─────────────────────────────────────
         attributed_candidates = filter_attributed_results(raw_candidates)
+
+        # ── Evidence Relevance Validation: Activity Compatibility & Distinguishing Terms ─────
+        from app.nlp.activity_extractor import extract_business_activity, BusinessActivityType
+        activity = extract_business_activity(clean_query)
+
+        # 1. Reject everything if query contains an unrecognized token
+        if activity.activity_type == BusinessActivityType.UNRECOGNIZED_TOKEN:
+            logger.info("retrieval_service_unrecognized_token_rejected", token=activity.extracted_text)
+            attributed_candidates = []
+
+        # 2. Activity domain compatibility filtering
+        if attributed_candidates:
+            # If the user query is explicitly non-food (tailoring, clothing, electronics, generic retail),
+            # reject Retail Food Establishment (1006) and other food licenses.
+            if not activity.is_food_related and activity.activity_type not in (BusinessActivityType.NONE, BusinessActivityType.GENERIC_BUSINESS):
+                compatible_candidates = []
+                for c in attributed_candidates:
+                    srv_name = (getattr(c, "service_name", "") or "").lower()
+                    srv_code = (getattr(c, "service_code", "") or "").lower()
+                    if srv_code in ("1006", "4405", "1005") or "retail food" in srv_name or "mobile food" in srv_name:
+                        continue  # Incompatible food license for non-food activity
+                    compatible_candidates.append(c)
+                attributed_candidates = compatible_candidates
+
+        # 3. Check distinguishing terms
+        expanded_q = expand_query(clean_query)
+        distinguishing_terms = extract_distinguishing_terms(f"{clean_query} {expanded_q}")
+        if target_service and target_service.lower() not in ("business license", "license", "city license"):
+            for t in re.findall(r"\b[a-zA-Z0-9_-]+\b", target_service.lower()):
+                if t not in distinguishing_terms and len(t) > 2 and t not in (
+                    "business", "license", "city", "chicago", "service", "apply", "for"
+                ):
+                    distinguishing_terms.append(t)
+
+        if distinguishing_terms and attributed_candidates:
+            matched_candidates = []
+            suggested_svc = (activity.suggested_candidate_service or "").lower()
+            for c in attributed_candidates:
+                chunk_text = (getattr(c, "text", "") or "").lower()
+                srv_name = (getattr(c, "service_name", "") or "").lower()
+                srv_cat = (getattr(c, "category", "") or "").lower()
+                srv_code = (getattr(c, "service_code", "") or "").lower()
+                full_chunk_str = f"{chunk_text} {srv_name} {srv_cat} {srv_code}"
+
+                term_match = any(dt in full_chunk_str for dt in distinguishing_terms)
+                suggested_match = False
+                if suggested_svc:
+                    suggested_match = (
+                        suggested_svc in srv_name
+                        or suggested_svc in srv_code
+                        or (suggested_svc in ("limited business license", "1010") and ("retail" in srv_cat or "1010" in srv_code or "limited business" in srv_name))
+                    )
+
+                if term_match or suggested_match:
+                    matched_candidates.append(c)
+
+            if not matched_candidates:
+                # Distinguishing entity is completely absent from knowledge base
+                logger.info(
+                    "retrieval_service_distinguishing_entity_unmatched",
+                    terms=distinguishing_terms,
+                    rejected_count=len(attributed_candidates),
+                )
+                attributed_candidates = []
+            else:
+                attributed_candidates = matched_candidates
 
         # ── Assemble EvidenceResult items and SourceReferences ───────────────
         evidence_results: List[EvidenceResult] = []
@@ -213,23 +336,29 @@ class RetrievalService:
                 sem_s = top_res.semantic_score
                 if sem_s < 0.15 or bm25_s < 1.5:
                     # Insufficient semantic agreement or lexical overlap -> Out-of-domain / irrelevant match
-                    confidence = round(min(0.12, max(0.02, sem_s * 0.2)), 3)
+                    confidence = round(min(0.12, max(0.02, sem_s * 0.2)), 2)
                 elif bm25_s >= 3.0 and sem_s >= 0.20:
-                    # Strong multi-modal agreement
-                    confidence = round(min(1.0, 0.6 + (top_score / 0.0328) * 0.38), 3)
+                    # Multi-modal agreement: calibrate based on direct entity vs inferred broad category
+                    is_inferred = getattr(activity, "is_generic_or_ambiguous", False) or activity.activity_type in (
+                        BusinessActivityType.RETAIL_CLOTHING,
+                        BusinessActivityType.RETAIL_ELECTRONICS_MOBILE,
+                        BusinessActivityType.GENERIC_RETAIL,
+                    )
+                    base_conf = 0.78 if is_inferred else 0.88
+                    confidence = round(min(0.92, base_conf + (min(bm25_s, 8.0) / 40.0) * 0.08), 2)
                 elif bm25_s >= 1.5 and sem_s >= 0.15:
                     # Moderate lexical and semantic match
-                    confidence = round(min(0.85, 0.4 + (bm25_s / 10.0) * 0.4), 3)
+                    confidence = round(min(0.75, 0.45 + (bm25_s / 10.0) * 0.25), 2)
                 else:
-                    confidence = round(min(0.14, max(0.05, sem_s * 0.1)), 3)
+                    confidence = round(min(0.14, max(0.05, sem_s * 0.1)), 2)
             elif retrieval_mode == "semantic":
-                confidence = round(top_score if top_score >= 0.40 else top_score * 0.15, 3)
+                confidence = round(min(0.90, top_score) if top_score >= 0.40 else top_score * 0.15, 2)
             else:
-                confidence = round(min(1.0, top_score / 10.0) if top_score >= 2.0 else 0.05, 3)
+                confidence = round(min(0.90, top_score / 10.0) if top_score >= 2.0 else 0.05, 2)
 
         return EvidenceBundle(
             query=query,
-            intent=intent,
+            intent=intent_val,
             intents=intents_list,
             total_retrieved=len(evidence_results),
             confidence=confidence,
@@ -237,3 +366,4 @@ class RetrievalService:
             results=evidence_results,
             sources=source_references,
         )
+

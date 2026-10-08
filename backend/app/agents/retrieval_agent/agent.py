@@ -143,9 +143,24 @@ class RetrievalAgent:
 
         try:
             # ── Execute Hybrid Information Retrieval ──────────────────────────
+            target_service = None
+            if structured_query and isinstance(structured_query, dict):
+                target_services = structured_query.get("search_parameters", {}).get("target_services", [])
+                if target_services:
+                    target_service = target_services[0]
+                elif structured_query.get("entities"):
+                    for e in structured_query["entities"]:
+                        lbl = e.get("label") if isinstance(e, dict) else getattr(e, "label", None)
+                        txt = e.get("text") if isinstance(e, dict) else getattr(e, "text", None)
+                        if lbl in ("SERVICE", "LICENSE_CODE"):
+                            target_service = txt
+                            break
+
             evidence_bundle: EvidenceBundle = await self._retrieval_engine.search(
                 query=search_query,
                 top_k=top_k,
+                intent=intent,
+                target_service=target_service,
             )
             evidence_bundle.domain = detected_domain.value if hasattr(detected_domain, "value") else str(detected_domain)
             evidence_bundle.domain_supported = True

@@ -41,19 +41,29 @@ def check_grounding_and_citations(
     results = evidence_bundle.get("results", [])
     valid_urls: Set[str] = set()
     attributed_sources: List[Dict[str, Any]] = []
+    seen_canonical_sources: Set[str] = set()
 
     for r in results:
         url = r.get("source_url")
         if url:
             valid_urls.add(url.strip().rstrip("/"))
+        source_id = r.get("source_id") or "N/A"
+        title = r.get("source_title") or r.get("service_name") or "Official Source"
+        service_code = r.get("service_code") or r.get("service_id") or ""
+
+        # Deduplicate by canonical source identifier (source_id, url, service_code)
+        canon_key = f"{source_id}::{url or ''}::{service_code}"
+        if canon_key in seen_canonical_sources:
+            continue
+        seen_canonical_sources.add(canon_key)
+
         source_entry = {
-            "source_id": r.get("source_id", "N/A"),
-            "title": r.get("source_title", "Official Source"),
-            "url": r.get("source_url"),
+            "source_id": source_id,
+            "title": title,
+            "url": url,
             "excerpt": (r.get("text") or r.get("content", ""))[:200],
         }
-        if source_entry not in attributed_sources:
-            attributed_sources.append(source_entry)
+        attributed_sources.append(source_entry)
 
     # Check 1: Empty or error response
     if not answer or not answer.strip():

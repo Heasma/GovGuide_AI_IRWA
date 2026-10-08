@@ -45,10 +45,10 @@ _LOCATION_PATTERNS = [
 ]
 
 _SERVICE_PATTERNS = [
-    (r"\b(retail\s+food\s+establishment|retail\s+food|restaurant\s+license|food\s+license)\b", "Retail Food Establishment"),
-    (r"\b(limited\s+business\s+license|lbl|general\s+business\s+license)\b", "Limited Business License"),
-    (r"\b(children('s|\s+)?services(\s+facility)?|daycare\s+license|childcare\s+facility)\b", "Children's Services Facility"),
-    (r"\b(public\s+place\s+of\s+amusement|ppa|entertainment\s+license|music\s+venue\s+license)\b", "Public Place of Amusement"),
+    (r"\b(retail\s+food\s+establishment|retail\s+food|restaurant\s+license|food\s+license|food\s+business(?:\s+license)?|food\s+establishment|food\s+service|food\s+store)\b", "Retail Food Establishment License"),
+    (r"\b(limited\s+business\s+license|lbl|general\s+business\s+license|general\s+business)\b", "Limited Business License"),
+    (r"\b(children('s|\s+)?services(\s+facility)?|daycare\s+license|childcare\s+facility)\b", "Children's Services Facility License"),
+    (r"\b(public\s+place\s+of\s+amusement|ppa|entertainment\s+license|music\s+venue\s+license)\b", "Public Place of Amusement License"),
     (r"\b(consumption\s+on\s+premises|liquor\s+license|tavern\s+license|bar\s+license|liquor)\b", "Tavern / Consumption on Premises"),
     (r"\b(retail\s+tobacco|tobacco\s+license|vape\s+shop\s+license|smoke\s+shop)\b", "Retail Tobacco"),
     (r"\b(motor\s+vehicle\s+repair|auto\s+repair\s+license|garage\s+license|body\s+shop)\b", "Motor Vehicle Repair"),
@@ -197,6 +197,8 @@ def extract_primary_service_entity(text: str) -> Tuple[Optional[str], str]:
     if not text:
         return None, "none"
 
+    from app.nlp.activity_extractor import extract_business_activity, BusinessActivityType
+
     # Check license code patterns
     code_match = _LICENSE_CODE_PATTERN.search(text)
     if code_match:
@@ -224,21 +226,10 @@ def extract_primary_service_entity(text: str) -> Tuple[Optional[str], str]:
             if re.search(pattern, text, re.I):
                 return canonical_name, "explicit_current_query"
 
-    # Check for general business activities (inferred)
-    if re.search(r"\b(food\s+truck|mobile\s+food|mobile\s+vendor|street\s+vendor)\b", text, re.I):
-        return "Apply for a Mobile Food License", "inferred_current_query"
-    if re.search(r"\b(restaurant|food\s+(?:business|service|place|joint|establishment)|cafe|bakery|diner|catering|coffee\s+shop)\b", text, re.I):
-        return "Retail Food Establishment License", "inferred_current_query"
-    if re.search(r"\b(clothing(?:\s+shop|\s+store)?|clothes|retail\s+(?:store|shop)|boutique|merchandise|shoe\s+store|apparel|bookstore|gift\s+shop|hardware\s+store)\b", text, re.I):
-        return "Limited Business License", "inferred_current_query"
-    if re.search(r"\b(daycare|childcare|preschool|nursery)\b", text, re.I):
-        return "Children's Services Facility License", "inferred_current_query"
-    if re.search(r"\b(bar|tavern|liquor|pub|nightclub)\b", text, re.I):
-        return "Tavern / Consumption on Premises License", "inferred_current_query"
-    if re.search(r"\b(auto\s+repair|mechanic|body\s+shop|garage)\b", text, re.I):
-        return "Motor Vehicle Repair", "inferred_current_query"
-    if re.search(r"\b(vape|smoke\s+shop|tobacco\s+shop)\b", text, re.I):
-        return "Retail Tobacco", "inferred_current_query"
+    # Check business activity extraction (structured & domain-aware)
+    activity = extract_business_activity(text)
+    if activity.suggested_candidate_service:
+        return activity.suggested_candidate_service, "inferred_current_query"
 
     return None, "none"
 
@@ -260,6 +251,17 @@ def resolve_conversation_context(current_query: str, recent_messages: List[Any],
     return None
 
 
+_TOPIC_SWITCH_PATTERN = re.compile(
+    r"\b(?:what\s+about|how\s+about|instead\s+of|switch\s+to|what\s+if\s+i\s+start|what\s+if\s+i\s+open|what\s+if\s+i\s+have|for\s+a|for\s+an)\s+(?:a\s+|an\s+)?([a-z0-9_\-\s]+?)(?:\?|$)",
+    re.I
+)
+
+_DISTINCT_BUSINESS_PATTERN = re.compile(
+    r"\b([a-z0-9_\-]+(?:\s+[a-z0-9_\-]+)?)\s+(?:company|business|shop|store|firm|contractor|facility|center|industry)\b",
+    re.I
+)
+
+
 def resolve_query_entity(
     current_query: str,
     context_entity: Optional[str] = None,
@@ -268,25 +270,65 @@ def resolve_query_entity(
     Determines the active entity for the current query based on strict priority:
     1. Explicit entity in current query (overrides previous context)
     2. Inferred entity in current query (overrides previous context)
-    3. Pronoun resolution using conversation context
-    4. Conversation context follow-up
+    3. Topic switch / new business subject detection (drops old context)
+    4. Pronoun resolution using conversation context
+    5. Conversation context follow-up
 
     Returns:
         Tuple of (resolved_entity, entity_source, context_switched)
     """
-    # Priority 1 & 2: Check current query first
+    # Priority 1 & 2: Check current query first for known entities
     current_entity, source = extract_primary_service_entity(current_query)
     if current_entity:
         context_switched = bool(context_entity and current_entity != context_entity)
         return current_entity, source, context_switched
 
-    # Priority 3 & 4: Check if previous context exists
+    # Priority 3: Check for explicit topic switch or new distinct business activity
+    switch_match = _TOPIC_SWITCH_PATTERN.search(current_query)
+    if switch_match:
+        switched_subject = switch_match.group(1).strip()
+        # Clean up filler words
+        switched_subject = re.sub(r"\b(instead|now|please)\b", "", switched_subject, flags=re.I).strip()
+        pronoun_words = {"it", "this", "that", "these", "those", "this license", "that license", "the license", "this one", "that one", "license", "the business", "this business"}
+        if switched_subject and switched_subject.lower() not in pronoun_words:
+            return switched_subject, "topic_switch", True
+
+    # Check if a specific business activity was mentioned in the current query that overrides previous context
+    from app.nlp.activity_extractor import extract_business_activity, BusinessActivityType
+    act = extract_business_activity(current_query)
+    if act.activity_type != BusinessActivityType.NONE and act.activity_type != BusinessActivityType.GENERIC_BUSINESS:
+        if context_entity:
+            is_food_context = any(w in context_entity.lower() for w in ("food", "restaurant", "1006", "tavern", "bar"))
+            if act.is_food_related != is_food_context or act.activity_type in (
+                BusinessActivityType.SERVICE_TAILORING,
+                BusinessActivityType.RETAIL_CLOTHING,
+                BusinessActivityType.RETAIL_ELECTRONICS_MOBILE,
+                BusinessActivityType.GENERIC_RETAIL,
+            ):
+                return act.suggested_candidate_service or act.extracted_text, "new_business_subject", True
+        elif act.suggested_candidate_service:
+            return act.suggested_candidate_service, "inferred_current_query", False
+
+    # Check if a new distinct business type is mentioned (e.g. "construction company")
+    biz_match = _DISTINCT_BUSINESS_PATTERN.search(current_query)
+    if biz_match:
+        new_biz = biz_match.group(0).strip()
+        if context_entity and new_biz.lower() not in context_entity.lower():
+            return new_biz, "new_business_subject", True
+
+    # Check if query contains an unknown token like "XYZABC123"
+    unknown_token_match = re.search(r"\b([a-zA-Z0-9_-]*[0-9]+[a-zA-Z0-9_-]*)\b", current_query)
+    if unknown_token_match and unknown_token_match.group(1) not in ("1006", "1010", "1011", "1004", "1005", "1002", "1470", "1781", "4405", "800", "121", "60602", "744", "6060", "2", "1", "3", "4", "5"):
+        return unknown_token_match.group(1), "unrecognized_token", True
+
+    # Priority 4 & 5: Check if previous context exists for genuine follow-ups
     if context_entity:
         has_pronoun = bool(_PRONOUN_PATTERN.search(current_query))
         source = "pronoun_resolution" if has_pronoun else "conversation_context"
         return context_entity, source, False
 
     return None, "none", False
+
 
 
 

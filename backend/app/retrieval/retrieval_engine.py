@@ -33,6 +33,8 @@ class RetrievalEngine:
         query: str,
         top_k: int = 10,
         filters: dict = None,
+        intent: Optional[str] = None,
+        target_service: Optional[str] = None,
     ) -> EvidenceBundle:
         """
         Execute a retrieval query via RetrievalService.
@@ -42,5 +44,13 @@ class RetrievalEngine:
             query_length=len(query),
             top_k=top_k,
             mode=self.mode,
+            intent=intent,
+            target_service=target_service,
         )
-        return self._service.search(query=query, top_k=top_k, mode=self.mode)
+        return self._service.search(
+            query=query,
+            top_k=top_k,
+            mode=self.mode,
+            intent=intent,
+            target_service=target_service,
+        )

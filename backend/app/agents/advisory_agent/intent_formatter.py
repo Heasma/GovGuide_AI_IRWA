@@ -3,7 +3,13 @@ GovGuide AI — Conversational Intent-Driven Response Formatter & Relevance Engi
 
 Behaves like a natural, conversational government-service assistant:
 1. Answers the user's specific question directly without rigid boilerplate headers or repeating templates.
-2. Formats responses conversationally:
+2. Supports multilingual and code-mixed styles:
+   - English -> Natural English
+   - Thanglish -> Natural Thanglish
+   - Tamil -> Natural Tamil
+   - Sinhala -> Natural Sinhala
+   - Singlish -> Natural Singlish
+3. Formats responses conversationally:
    - Fees -> Direct cost, payment terms, and portal verification link.
    - Required Documents -> Clean bulleted checklist.
    - Eligibility -> Direct qualification statement.
@@ -12,13 +18,14 @@ Behaves like a natural, conversational government-service assistant:
    - Multi-License Comparison -> Clean table + key distinctions.
    - Source Evidence -> Governing authority, MCC chapter, and verification status.
    - License Lookup -> Recommended license and brief purpose.
-3. Merges multiple chunks of the same license into ONE coherent, deduplicated record.
-4. Enforces strict missing-information handling and calibrated confidence.
+4. Merges multiple chunks of the same license into ONE coherent, deduplicated record.
+5. Enforces strict missing-information handling and calibrated confidence.
 """
 
 from typing import Any, Dict, List, Optional, Tuple
 import re
 from app.orchestrator.message_schema import Intent, ConfidenceLabel
+from app.nlp.language_detector import LanguageCode, detect_language, resolve_query_language
 
 NOT_AVAILABLE_VALUES = {"NOT_AVAILABLE", "N/A", "NONE", "NULL", "UNKNOWN", ""}
 
@@ -156,13 +163,257 @@ def extract_service_profiles(evidence_bundle: Dict[str, Any]) -> List[Dict[str, 
     return list(services_map.values())
 
 
+# ── Multilingual Clarification & Fallback Templates ──────────────────────────
+
+def get_clarification_response(
+    language: Any = LanguageCode.ENGLISH,
+    clarification_type: Optional[str] = None,
+) -> str:
+    """Returns a natural, tailored clarification request based on language and clarification type."""
+    lang = language
+    if isinstance(lang, str):
+        try:
+            lang = LanguageCode(lang.lower())
+        except ValueError:
+            lang = LanguageCode.ENGLISH
+
+    # 1. Generic Retail clarification (asking for type of goods)
+    if clarification_type == "retail_goods":
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            return (
+                "Sure. Retail shop open panna license requirement business type-a depend aagum. "
+                "Neenga enna type retail shop open panna poringa — clothing, grocery, electronics, tailoring, illa vera type? "
+                "Adha sonna available government records based-a relevant license identify pannalaam."
+            )
+        elif lang == LanguageCode.TAMIL:
+            return (
+                "நிச்சயமாக. சில்லறை கடைக்கான உரிமத் தேவை நீங்கள் விற்கும் பொருள்களைப் பொறுத்தது. "
+                "நீங்கள் என்ன வகை சில்லறை கடை திறக்க உள்ளீர்கள் — ஆடை, மளிகை, எலக்ட்ரானிக்ஸ், தையல் அல்லது வேறு வகையா?"
+            )
+        elif lang == LanguageCode.SINHALA:
+            return (
+                "Sure! සිල්ලර වෙළඳසැල් බලපත්‍ර අවශ්‍යතාවය ඔබ විකුණන භාණ්ඩ වර්ගය මත රඳා පවතී. "
+                "ඔබ ආරම්භ කිරීමට බලාපොරොත්තු වන්නේ කුමන වර්ගයේ සිල්ලර වෙළඳසැලක්ද — ඇඳුම්, සිල්ලර බඩු, ඉලෙක්ට්‍රොනික හෝ වෙනත් වර්ගයක්ද?"
+            )
+        elif lang == LanguageCode.SINGLISH:
+            return (
+                "Sure. Retail store license requirement depend wenne business type eka anuwa. "
+                "Oyata mona wage retail shop ekakda open karanna ona — clothing, grocery, electronics, tailoring wage?"
+            )
+        return (
+            "Sure! Retail store licensing requirements depend on the type of goods you plan to sell. "
+            "What type of retail shop are you planning to open — for example, clothing, grocery, electronics, tailoring, or another type?"
+        )
+
+    # 2. Tailoring setup clarification (commercial storefront vs home-based)
+    if clarification_type == "tailoring_setup":
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            return (
+                "Neenga 'tailoring' business/shop pathi kekkureenga-nu purinjukitten. "
+                "License requirement-ku tailoring business-ku applicable-aana government service record irukka-nu check pannanum. "
+                "Neenga tailoring shop open panna poringala, illa home-based tailoring business-aa?"
+            )
+        elif lang == LanguageCode.TAMIL:
+            return (
+                "நீங்கள் 'தையல்' வணிகம்/கடை பற்றி கேட்கிறீர்கள் என்பதை புரிந்து கொண்டேன். "
+                "நீங்கள் தையல் கடையைத் திறக்க திட்டமிட்டுள்ளீர்களா அல்லது வீட்டிலிருந்தே தையல் செய்யப் போகிறீர்களா?"
+            )
+        elif lang == LanguageCode.SINHALA:
+            return (
+                "ඔබ 'මැහුම්' (tailoring) ව්‍යාපාරය පිළිබඳව විමසන බව තේරුම් ගතිමි. "
+                "ඔබ මැහුම් සාප්පුවක් ආරම්භ කිරීමට බලාපොරොත්තු වන්නේද, නැතහොත් නිවසේ සිට කරන ව්‍යාපාරයක්ද?"
+            )
+        return (
+            "I understand you are asking about a tailoring business. "
+            "To determine applicable government licensing requirements, are you planning to open a commercial tailoring shop, or operate a home-based tailoring service?"
+        )
+
+    # 3. Context-less Explanation / Short Follow-up
+    if clarification_type in ("explain_topic", "missing_context"):
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            return (
+                "Sure 😊 Enna topic or license pathi explain pannanum? "
+                "Unga question or business type sonna available government records based-a explain panren."
+            )
+        elif lang == LanguageCode.TAMIL:
+            return (
+                "நிச்சயமாக! 😊 எந்த உரிமம் அல்லது தலைப்பு பற்றி விளக்க வேண்டும்? "
+                "உங்கள் கேள்வி அல்லது வணிக வகையைக் கூறுங்கள்."
+            )
+        elif lang == LanguageCode.SINHALA:
+            return (
+                "Sure! 😊 ඔබට කුමන මාතෘකාව හෝ බලපත්‍රය පිළිබඳව පැහැදිලි කිරීමට අවශ්‍යද? කරුණාකර සඳහන් කරන්න."
+            )
+        return (
+            "Sure 😊 What topic or license would you like me to explain? "
+            "Please specify your question or the business type you are interested in."
+        )
+
+    # 4. Default business_type clarification
+    if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+        return (
+            "Sure. Licence edukkanum-na, unga business type enna-nu sollunga. "
+            "Food business, retail shop, restaurant madhiri enna type business-nu sonna, "
+            "available official records based-a relevant licence identify panna mudiyum."
+        )
+    elif lang == LanguageCode.TAMIL:
+        return (
+            "நிச்சயமாக. உங்களுக்கு எந்த வகை வணிகத்திற்கான உரிமம் தேவை என்பதைக் கூறுங்கள் "
+            "(உதாரணமாக: உணவு வணிகம், சில்லறை கடை, உணவகம்)."
+        )
+    elif lang == LanguageCode.SINHALA:
+        return (
+            "ඔබට අවශ්‍ය බලපත්‍රය හඳුනා ගැනීමට කරුණාකර ඔබේ ව්‍යාපාර වර්ගය සඳහන් කරන්න "
+            "(උදාහරණයක් ලෙස: ආහාර ව්‍යාපාර, සිල්ලර වෙළඳසැල්, ආපනශාලා)."
+        )
+    elif lang == LanguageCode.SINGLISH:
+        return (
+            "Sure. Oyata ganna ona license eka mokakda kiyala business type eka kiyanna "
+            "(e.g., food business, retail store, restaurant wage)."
+        )
+    return (
+        "Sure! To help you identify the right license, could you please specify your business type? "
+        "For example, whether it is a food business, retail store, or restaurant."
+    )
+
+
+def get_insufficient_evidence_response(language: LanguageCode = LanguageCode.ENGLISH) -> str:
+    """Returns a polite soft fallback response when verified evidence is unavailable."""
+    if language == LanguageCode.THANGLISH or language == LanguageCode.MIXED:
+        return (
+            "Indha request-ku sufficiently relevant-aana verified government service information enakku kidaikkala. "
+            "Thappaana information kudukka naan virumbala. Neenga konjam more details kudutha, "
+            "available services-la correct-aana option irukka-nu check pannalaam."
+        )
+    elif language == LanguageCode.TAMIL:
+        return (
+            "இந்தக் கேள்விக்கு போதுமான சரிபார்க்கப்பட்ட அரசாங்க சேவைத் தகவல் கிடைக்கவில்லை. "
+            "தவறான தகவலை வழங்காமல் இருப்பதற்காக, தயவுசெய்து உங்கள் தேவையைச் சிறிது தெளிவாகக் கூறுங்கள்."
+        )
+    elif language == LanguageCode.SINHALA:
+        return (
+            "මෙම විමසුම සඳහා ප්‍රමාණවත් නිල තොරතුරු සොයා ගැනීමට නොහැකි විය. "
+            "වැරදි තොරතුරු සැපයීමෙන් වැළකී සිටීමට, කරුණාකර ඔබේ අවශ්‍යතාවය පිළිබඳ වැඩිදුර විස්තර සපයන්න."
+        )
+    elif language == LanguageCode.SINGLISH:
+        return (
+            "Me request ekata sufficiently relevant verified government service record ekak mata hambawune na. "
+            "Waradi information nodi inna mata ona. Poddak wadiura details dunnoth available services check karala kiyannam."
+        )
+    return (
+        "I could not find sufficient official evidence in the available verified government sources to answer your specific inquiry. "
+        "I don't want to provide incorrect information. If you provide a little more detail about what you need, "
+        "I can check the available services more accurately."
+    )
+
+
+def get_unsupported_domain_response(domain: Optional[str], language: LanguageCode = LanguageCode.ENGLISH) -> str:
+    """Returns safe guidance for out-of-scope domains (such as driver licenses or aviation)."""
+    domain_str = (domain or "").lower()
+    is_driver = domain_str in ("driver_license", "driver license", "driver's license", "driving license")
+    is_aviation = domain_str in ("aviation", "aviation_license", "helicopter", "pilot")
+
+    if language == LanguageCode.THANGLISH or language == LanguageCode.MIXED:
+        if is_driver:
+            return (
+                "GovGuide AI knowledge base-la driver's licence pathina information kidaikkala.\n\n"
+                "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+                "Please check the relevant official driver's licensing authority (Illinois Secretary of State / DMV https://www.ilsos.gov)."
+            )
+        elif is_aviation:
+            return (
+                "GovGuide AI knowledge base-la aviation licensing pathina information kidaikkala.\n\n"
+                "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+                "Please consult the Federal Aviation Administration (FAA https://www.faa.gov)."
+            )
+        return (
+            f"GovGuide AI knowledge base-la {domain_str.replace('_', ' ')} pathina information kidaikkala.\n\n"
+            "The available knowledge base currently focuses on City of Chicago government business licensing information."
+        )
+    elif language == LanguageCode.TAMIL:
+        if is_driver:
+            return (
+                "தற்போதைய GovGuide AI தரவுத்தளத்தில் ஓட்டுநர் உரிமம் பற்றிய தகவல்கள் இல்லை.\n\n"
+                "இது சிகாகோ வணிக உரிமங்களில் மட்டுமே கவனம் செலுத்துகிறது.\n\n"
+                "அதிகாரப்பூர்வ DMV (https://www.ilsos.gov) தளத்தைப் பார்க்கவும்."
+            )
+        return (
+            "தற்போதைய GovGuide AI தரவுத்தளத்தில் இந்த சேவை பற்றிய தகவல்கள் இல்லை.\n\n"
+            "இது சிகாகோ வணிக உரிமங்களில் மட்டுமே கவனம் செலுத்துகிறது."
+        )
+    elif language == LanguageCode.SINHALA:
+        if is_driver:
+            return (
+                "GovGuide AI දැනුම් පදනමේ රියදුරු බලපත්‍ර පිළිබඳ තොරතුරු නොමැත.\n\n"
+                "මෙය චිකාගෝ ව්‍යාපාරික බලපත්‍ර සඳහා පමණක් සීමා වේ.\n\n"
+                "නිල DMV (https://www.ilsos.gov) පරීක්ෂා කරන්න."
+            )
+        return (
+            "GovGuide AI දැනුම් පදනමේ මෙම සේවාව පිළිබඳ තොරතුරු නොමැත.\n\n"
+            "මෙය චිකාගෝ ව්‍යාපාරික බලපත්‍ර සඳහා පමණක් සීමා වේ."
+        )
+
+    # Standard English default
+    if is_driver:
+        return (
+            "I couldn't find relevant information about driver's licences in the current GovGuide AI knowledge base.\n\n"
+            "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+            "Please check the relevant official driver's licensing authority (such as the Illinois Secretary of State / DMV at https://www.ilsos.gov) for current licence class requirements and driving regulations."
+        )
+    if is_aviation:
+        return (
+            "I couldn't find relevant information about aviation licensing in the current GovGuide AI knowledge base.\n\n"
+            "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+            "Please consult the Federal Aviation Administration (FAA at https://www.faa.gov) for official pilot and aircraft licensing requirements."
+        )
+    domain_label = domain_str.replace("_", " ") if domain_str else "this service domain"
+    return (
+        f"I couldn't find relevant information about {domain_label} in the current GovGuide AI knowledge base.\n\n"
+        "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
+        "Please consult the relevant official government authority directly for service and licensing requirements."
+    )
+
+
 def get_conversational_response(query: str, conv_type: Optional[str] = None) -> str:
     """
-    Generates a natural, friendly conversational response for non-informational queries.
-    Handles thanks, acknowledgements, goodbyes, greetings, and casual statements.
+    Generates a natural conversational response for non-informational queries.
     """
     q = (query or "").lower().strip()
+    lang = resolve_query_language(query)
 
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        if conv_type == "GREETING" or any(w in q for w in ("hi", "hello", "vanakkam", "hey")):
+            return (
+                "Vanakkam! Naan GovGuide AI, unga City of Chicago government services and business licensing assistant. "
+                "Ungalukku enna help thevai? Business licenses (Retail Food, Limited Business), "
+                "application procedure, documents, fees, alladhu City department offices pathi kekkalaam."
+            )
+        if conv_type == "THANKS" or "nandri" in q or "thanks" in q:
+            return "You're welcome! Ungalukku vera edhavadhu information thevaipatta kelunga."
+        return "You're welcome! Edhavadhu questions irundha sollunga."
+
+    if lang == LanguageCode.TAMIL:
+        if conv_type == "GREETING" or "வணக்கம்" in query:
+            return (
+                "வணக்கம்! நான் GovGuide AI, உங்கள் சிகாகோ வணிக உரிம வழிகாட்டி. "
+                "உங்களுக்கு எவ்வாறு உதவ முடியும்? வணிக உரிமங்கள், தேவையான ஆவணங்கள், "
+                "கட்டணம் அல்லது விண்ணப்ப முறைகள் பற்றி நீங்கள் கேட்கலாம்."
+            )
+        if conv_type == "THANKS" or "நன்றி" in query:
+            return "மிக்க மகிழ்ச்சி! மேலும் ஏதேனும் தகவல் தேவைப்பட்டால் கேளுங்கள்."
+        return "மிக்க மகிழ்ச்சி! உங்களுக்கு உதவ எப்போதும் தயாராக உள்ளேன்."
+
+    if lang == LanguageCode.SINHALA:
+        if conv_type == "GREETING" or "ආයුබෝවන්" in query:
+            return (
+                "ආයුබෝවන්! මම GovGuide AI. මම ඔබට චිකාගෝ ව්‍යාපාරික බලපත්‍ර, අවශ්‍ය ලියකියවිලි, "
+                "ගාස්තු සහ අයදුම් කිරීමේ ක්‍රියාවලිය පිළිබඳව උපකාර කළ හැක."
+            )
+        if conv_type == "THANKS" or "ස්තූතියි" in query:
+            return "ඔබව සාදරයෙන් පිළිගනිමි! තවත් තොරතුරු අවශ්‍ය නම් විමසන්න."
+        return "ඔබව සාදරයෙන් පිළිගනිමි!"
+
+    # Standard English
     if conv_type == "GOODBYE" or any(w in q for w in ("bye", "goodbye", "farewell", "have a great day", "have a good day", "have a nice day")):
         return "You're welcome! Have a great day."
 
@@ -176,10 +427,6 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
         return "I'm glad to help! Let me know if you have any more questions."
 
     if conv_type == "THANKS" or any(w in q for w in ("thank you", "thanks", "appreciate it", "much appreciated")):
-        if "help" in q:
-            return "You're welcome! Let me know if you need anything else."
-        elif "got it" in q:
-            return "You're welcome! I'm happy to help."
         return "You're welcome! Let me know if you need anything else."
 
     if conv_type == "ACKNOWLEDGEMENT" or any(w in q for w in ("got it", "okay", "ok", "alright", "understood", "makes sense", "perfect", "sounds good")):
@@ -195,19 +442,23 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
     return "You're welcome! Let me know if you need anything else."
 
 
+# ── Single & Multi-Intent Formatters ──────────────────────────────────────────
+
 def format_intent_response(
     query: str,
     intent: Intent,
     evidence_bundle: Dict[str, Any],
     intents: Optional[List[Any]] = None,
+    language: Optional[LanguageCode] = None,
 ) -> Tuple[str, bool, str]:
     """
     Synthesizes a natural conversational assistant response based on user intent.
-    Supports single-intent and multi-intent queries with strict evidence grounding.
+    Supports single-intent and multi-intent queries with strict evidence grounding and language adaptation.
 
     Returns:
         Tuple of (formatted_answer, is_target_information_available, explanation)
     """
+    lang = language or resolve_query_language(query)
     intent_val = intent.value if hasattr(intent, "value") else str(intent)
 
     if intent_val in (
@@ -221,9 +472,14 @@ def format_intent_response(
 
     # Extract all intents if not explicitly passed
     resolved_intents = intents or evidence_bundle.get("intents", [])
-    if not resolved_intents and query:
-        from app.nlp.intent_classifier import classify_intents
-        resolved_intents = classify_intents(query)
+    if not resolved_intents:
+        if intent and (intent.value if hasattr(intent, "value") else str(intent)) not in (
+            Intent.GENERAL.value, "general", Intent.UNKNOWN.value, "unknown"
+        ):
+            resolved_intents = [intent]
+        elif query:
+            from app.nlp.intent_classifier import classify_intents
+            resolved_intents = classify_intents(query)
 
     # If multiple distinct substantive intents are present, format multi-intent response
     substantive_intents = [
@@ -240,14 +496,12 @@ def format_intent_response(
     ]
 
     if len(substantive_intents) > 1:
-        return format_multi_intent_response(query, substantive_intents, evidence_bundle)
+        return format_multi_intent_response(query, substantive_intents, evidence_bundle, language=lang)
 
     profiles = extract_service_profiles(evidence_bundle)
     if not profiles:
         return (
-            "I could not find sufficient verified information in the available government sources to answer your specific inquiry. "
-            "To ensure accuracy, please consult the City of Chicago Department of Business Affairs and Consumer Protection (BACP) directly "
-            "or check Chicago Business Direct at https://www.chicago.gov/BusinessDirect.",
+            get_insufficient_evidence_response(lang),
             False,
             "No matching government service records were found in the knowledge base."
         )
@@ -262,56 +516,718 @@ def format_intent_response(
             "outside the united states", "remotely", "foreign national", "international applicant"
         )
     ):
-        return _format_geographic_eligibility_response(primary, query)
+        return _format_geographic_eligibility_response(primary, query, lang=lang)
 
     # Check for renewal / expiration queries
     if "renew" in q_lower or "expiration" in q_lower or "expire" in q_lower:
-        return _format_renewal_response(primary, query)
+        return _format_renewal_response(primary, query, lang=lang)
 
     # Check for comprehensive question asking for everything
     if any(w in q_lower for w in ("everything", "all requirements", "full guide", "complete process", "step by step guide to open")):
-        return _format_comprehensive_response(primary, query)
+        return _format_comprehensive_response(primary, query, lang=lang)
 
     if intent_val == Intent.FEES.value:
-        return _format_fee_response(primary, query)
+        return _format_fee_response(primary, query, lang=lang)
     elif intent_val == Intent.REQUIRED_DOCUMENTS.value:
-        return _format_documents_response(primary, query)
+        return _format_documents_response(primary, query, lang=lang)
     elif intent_val == Intent.ELIGIBILITY.value:
-        return _format_eligibility_response(primary, query)
+        return _format_eligibility_response(primary, query, lang=lang)
     elif intent_val in (Intent.APPLICATION_PROCEDURE.value, Intent.PROCEDURE.value):
-        return _format_procedure_response(primary, query)
+        return _format_procedure_response(primary, query, lang=lang)
     elif intent_val == Intent.COMPARISON.value:
-        return _format_comparison_response(profiles, query)
+        return _format_comparison_response(profiles, query, lang=lang)
     elif intent_val in (Intent.SOURCE_EVIDENCE.value, "source_verification"):
-        return _format_source_evidence_response(primary, query)
+        return _format_source_evidence_response(primary, query, lang=lang)
     elif intent_val == Intent.OFFICE_INFORMATION.value:
-        return _format_office_response(primary, query)
+        return _format_office_response(primary, query, lang=lang)
     elif intent_val == Intent.RENEWAL.value:
-        return _format_renewal_response(primary, query)
+        return _format_renewal_response(primary, query, lang=lang)
     elif intent_val in (
         Intent.SERVICE_LOOKUP.value, Intent.SERVICE_INFORMATION.value,
         Intent.LICENSE_IDENTIFICATION.value, "license_identification"
     ):
-        return _format_service_lookup_response(primary, query)
+        return _format_service_lookup_response(primary, query, lang=lang)
     else:
-        return _format_general_response(primary, query)
+        return _format_general_response(primary, query, lang=lang)
+
+
+def _format_service_lookup_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    cat = (p.get("category") or "Business Licensing").replace("_", " ").title()
+    overview = p.get("overview") or p.get("eligibility_summary") or "Municipal business license issued by the City of Chicago."
+    url = p["source_url"]
+    q_lower = query.lower()
+
+    # 1. Specialized cake / bakery business handling
+    if bool(re.search(r"\b(cake|baking|bake|pastry|cupcake)\b", q_lower)):
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            answer = (
+                "Cake business start panna, first unga business setup fixed commercial food establishment-aa, home-based-aa, illa retail bakery-aa nu determine panna vendum.\n\n"
+                f"Available Chicago records-la commercial food preparation matrum bakery operations-ku **{name} (Code {code})** applicable aagum [Source 1].\n\n"
+                "Unga business home-la irukkuma illa shop/commercial location-la irukkuma?"
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                "கேக் வணிகத்தைத் தொடங்க, முதலில் உங்கள் வணிக அமைப்பு வணிக ரீதியான உணவகமா/பேக்கரியா அல்லது வீட்டிலிருந்தே இயங்கும் வணிகமா என்பதை தீர்மானிக்க வேண்டும்.\n\n"
+                f"சிகாகோ பதிவுகளின்படி, உணவு தயாரிப்பு மற்றும் பேக்கரி விற்பனைக்கு **{name} (Code {code})** பொருந்தும் [Source 1].\n\n"
+                "உங்கள் வணிகம் வீட்டிலிருந்து இயங்குமா அல்லது கடையிலிருந்தா?"
+            )
+        else:
+            answer = (
+                "To start a cake business, it is essential to first determine whether your setup is a fixed commercial food establishment/bakery or a home-based operation.\n\n"
+                f"Under City of Chicago regulations, commercial food preparation and retail bakeries typically operate under the **{name} (Code {code})** [Source 1].\n\n"
+                "Will your cake business operate from a commercial storefront/bakery or from home?"
+            )
+        return answer, True, "Cake business guidance and applicable license overview provided from official records."
+
+    # 2. Specialized tailoring service handling
+    if bool(re.search(r"\b(tailoring|tailor|tailering|tailorng|alterations)\b", q_lower)):
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            answer = (
+                f"Tailoring shop open panna, Chicago municipal guidelines padi general commercial retail & service activity-ku **{name} (Code {code})** check pannanum [Source 1].\n\n"
+                f"• **Scope & Purpose:** {overview}\n\n"
+                "Neenga storefront tailoring shop open panna poringala, illa home-based tailoring service-aa?"
+            )
+        else:
+            answer = (
+                f"For opening a tailoring shop in Chicago, municipal regulations govern commercial storefront service activities under the **{name} (Code {code})** [Source 1].\n\n"
+                f"• **Scope & Purpose:** {overview}\n\n"
+                "Are you planning a commercial storefront tailoring shop or a home-based tailoring service?"
+            )
+        return answer, True, "Tailoring service guidance provided from official records."
+
+    # 3. Context-aware Explanation handling
+    if bool(re.search(r"\b(explain|explain\s+pannu|details|meaning)\b", q_lower)):
+        if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
+            answer = (
+                f"Sure. Namma previous-a **{name} (Code {code})** pathi pesinom. Adhoda scope & details:\n\n"
+                f"• **Category:** {cat}\n"
+                f"• **Purpose:** {overview}\n\n"
+                f"Fees, required documents checklist, alladhu application steps pathi explain pannanuma?\n\n"
+                f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+            )
+        else:
+            answer = (
+                f"Sure! Continuing from our discussion about the **{name} (License Code: {code})**:\n\n"
+                f"• **License Category:** {cat}\n"
+                f"• **Scope & Purpose:** {overview}\n\n"
+                f"Would you like me to explain the fees, required documents, or step-by-step application procedure?\n\n"
+                f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+            )
+        return answer, True, "Explanation of active service provided from official records."
+
+    # Standard service lookup
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"Chicago-la unga business requirement-ku, **{name} (Code {code})** thevai.\n\n"
+            f"• **License Category:** {cat}\n"
+            f"• **Scope & Purpose:** {overview}\n\n"
+            f"Fees, required documents, alladhu application procedure pathi theriya venduma?\n\n"
+            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"உங்கள் வணிகத் தேவைக்கு, உங்களுக்கு **{name} (Code {code})** தேவை.\n\n"
+            f"• **உரிமப் பிரிவு:** {cat}\n"
+            f"• **நோக்கம்:** {overview}\n\n"
+            f"கட்டணம், தேவையான ஆவணங்கள் அல்லது விண்ணப்ப முறை பற்றிய விவரங்கள் தேவையா?\n\n"
+            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"ඔබේ ව්‍යාපාර අවශ්‍යතාවය සඳහා, ඔබට **{name} (Code {code})** අවශ්‍ය වේ.\n\n"
+            f"• **බලපත්‍ර කාණ්ඩය:** {cat}\n"
+            f"• **අරමුණ:** {overview}\n\n"
+            f"ගාස්තු, ලියකියවිලි හෝ අයදුම් කිරීමේ පියවර පිළිබඳ විස්තර අවශ්‍යද?\n\n"
+            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.SINGLISH:
+        answer = (
+            f"Oyata business eka sandaha **{name} (Code {code})** ona wenawa.\n\n"
+            f"• **Category:** {cat}\n"
+            f"• **Purpose:** {overview}\n\n"
+            f"Fees, documents, hari application procedure eka gana wisthara onada?\n\n"
+            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+        )
+    else:
+        answer = (
+            f"For your business inquiry, you will need a **{name} (License Code: {code})**.\n\n"
+            f"• **License Category:** {cat}\n"
+            f"• **Scope & Purpose:** {overview}\n\n"
+            f"Would you like details on the fees, required documents, or application procedure?\n\n"
+            f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
+        )
+    return answer, True, "License identification and overview provided from official records."
+
+
+def _format_procedure_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    steps = p["application_steps"]
+    portal = p["application_portal_url"] or p["source_url"]
+    insp = p["inspection_required"]
+
+    if not is_valid_field(steps):
+        steps_formatted = (
+            "1. Determine your specific business activity and required municipal license category.\n"
+            "2. Complete required zoning review and clear any outstanding City debt.\n"
+            "3. Submit your application online through Chicago Business Direct or at City Hall.\n"
+            "4. Complete required inspections (Health, Fire, Buildings) and pay applicable licensing fees."
+        )
+    else:
+        raw_steps = [s.strip() for s in re.split(r"[|;]|\n(?:\s*\d+\.\s*)", steps) if s.strip()]
+        if len(raw_steps) > 1:
+            steps_formatted = "\n".join(f"{i}. {s.lstrip('0123456789. ')}" for i, s in enumerate(raw_steps, 1))
+        else:
+            steps_formatted = steps
+
+    insp_note = f"\n- **Inspection Requirement:** {insp}" if is_valid_field(insp) else ""
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"**{name} (Code {code})** apply panna indha steps follow pannunga:\n\n"
+            f"{steps_formatted}{insp_note}\n\n"
+            f"Applications online-la Chicago Business Direct ({portal}) vazhiya alladhu City Hall Small Business Center (121 N. LaSalle St., Room 800)-la direct-a submit pannalaam [Source 1]."
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"**{name} (Code {code})** விண்ணப்பிக்க பின்வரும் படிகளைப் பின்பற்றவும்:\n\n"
+            f"{steps_formatted}{insp_note}\n\n"
+            f"விண்ணப்பங்களை Chicago Business Direct ({portal}) மூலம் ஆன்லைனில் அல்லது City Hall Small Business Center (121 N. LaSalle St., Room 800) இல் சமர்ப்பிக்கலாம் [Source 1]."
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"**{name} (Code {code})** සඳහා අයදුම් කිරීමට මෙම පියවර අනුගමනය කරන්න:\n\n"
+            f"{steps_formatted}{insp_note}\n\n"
+            f"Chicago Business Direct ({portal}) හරහා මාර්ගගතව හෝ City Hall Small Business Center (121 N. LaSalle St., Room 800) හිදී අයදුම්පත් ඉදිරිපත් කළ හැක [Source 1]."
+        )
+    elif lang == LanguageCode.SINGLISH:
+        answer = (
+            f"**{name} (Code {code})** apply karanna me steps follow karanna:\n\n"
+            f"{steps_formatted}{insp_note}\n\n"
+            f"Applications Chicago Business Direct ({portal}) haraha online hari City Hall Small Business Center (121 N. LaSalle St., Room 800) eke direct hari submit karanna puluwan [Source 1]."
+        )
+    else:
+        answer = (
+            f"To apply for a **{name} (Code {code})**, follow these steps:\n\n"
+            f"{steps_formatted}{insp_note}\n\n"
+            f"Applications can be submitted online via Chicago Business Direct ({portal}) "
+            f"or in person at City Hall (Small Business Center, 121 N. LaSalle St., Room 800) [Source 1]."
+        )
+    return answer, True, "Application procedure steps provided from official records."
+
+
+def _format_documents_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    docs = p["required_documents"]
+    url = p["source_url"]
+
+    if not is_valid_field(docs):
+        if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+            answer = (
+                f"Naan **{name} (Code {code})** pathina information kandupidithen, "
+                f"aana available official records-la verified required documents checklist kidaikkala.\n\n"
+                f"Current documentation requirements-ai verify panna City of Chicago BACP alladhu Chicago Business Direct ({url}) check pannunga [Source 1]."
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் அதில் சரிபார்க்கப்பட்ட ஆவணங்களின் பட்டியல் இல்லை.\n\n"
+                f"தயவுசெய்து Chicago Business Direct ({url}) தளத்தைப் பார்க்கவும் [Source 1]."
+            )
+        elif lang == LanguageCode.SINHALA:
+            answer = (
+                f"**{name} (Code {code})** පිළිබඳ තොරතුරු සොයා ගන්නා ලදී, නමුත් ලියකියවිලි ලැයිස්තුවක් නොමැත.\n\n"
+                f"කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
+            )
+        else:
+            answer = (
+                f"I found information about the **{name} (Code {code})**, "
+                f"but the available official records do not specify a verified required documents checklist for this license.\n\n"
+                f"Please verify current documentation requirements with the City of Chicago BACP or via Chicago Business Direct at {url} [Source 1]."
+            )
+        return answer, False, "Required documents checklist is unavailable in official records."
+
+    doc_items = [d.strip() for d in re.split(r"[|;]|\n(?:\s*[-•*]\s*)?", docs) if d.strip()]
+    doc_bullets = "\n".join(f"• {d.lstrip('•-* ')}" for d in doc_items)
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"**{name} (Code {code})** edukka thevayana required documents:\n\n"
+            f"{doc_bullets}\n\n"
+            f"Indha requirements official records ({url}) based-a provide pannapattu irukku [Source 1]."
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"**{name} (Code {code})** பெற தேவையான ஆவணங்கள்:\n\n"
+            f"{doc_bullets}\n\n"
+            f"இவை அதிகாரப்பூர்வ பதிவுகளின்படி ({url}) வழங்கப்பட்டுள்ளன [Source 1]."
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"**{name} (Code {code})** සඳහා අවශ්‍ය ලියකියවිලි:\n\n"
+            f"{doc_bullets}\n\n"
+            f"මෙම අවශ්‍යතා නිල වාර්තා ({url}) මත පදනම් වේ [Source 1]."
+        )
+    elif lang == LanguageCode.SINGLISH:
+        answer = (
+            f"**{name} (Code {code})** ganna awashya liyakiyawili:\n\n"
+            f"{doc_bullets}\n\n"
+            f"Me awashyatha official records ({url}) anuwa we [Source 1]."
+        )
+    else:
+        answer = (
+            f"For the **{name} (Code {code})**, the required documents include:\n\n"
+            f"{doc_bullets}\n\n"
+            f"These requirements are based on the available official records ({url}) [Source 1]."
+        )
+    return answer, True, "Required documentation list provided from official records."
+
+
+def _format_fee_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    fee_amt = p["fee_amount"]
+    fee_desc = p["fee_description"]
+    url = p["source_url"]
+
+    if not is_valid_field(fee_amt):
+        if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+            answer = (
+                f"Naan official records-la **{name} (Code {code})** kandupidithen, "
+                f"aana retrieved evidence-la verified fee amount kidaikkala.\n\n"
+                f"Indha service-ku verified fee information enakku kidaikkala. "
+                f"Current fee details-ai verify panna City of Chicago BACP alladhu Chicago Business Direct ({url}) check pannunga [Source 1]."
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் அதில் சரிபார்க்கப்பட்ட கட்டண விவரங்கள் இல்லை.\n\n"
+                f"இந்த சேவைக்கான சரிபார்க்கப்பட்ட கட்டணத் தகவல் என்னிடம் இல்லை. தயவுசெய்து Chicago Business Direct ({url}) தளத்தைப் பார்க்கவும் [Source 1]."
+            )
+        elif lang == LanguageCode.SINHALA:
+            answer = (
+                f"**{name} (Code {code})** පිළිබඳ තොරතුරු සොයා ගන්නා ලදී, නමුත් තහවුරු කළ ගාස්තු ප්‍රමාණයක් නොමැත.\n\n"
+                f"මෙම සේවාව සඳහා තහවුරු කළ ගාස්තු තොරතුරු මා සතුව නොමැත. කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
+            )
+        else:
+            answer = (
+                f"I found the **{name} (Code {code})** in the available official records, "
+                f"but the retrieved evidence does not contain a verified fee amount.\n\n"
+                f"The available government records do not currently provide a verified fee amount for this license. "
+                f"Please verify the current fee with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) "
+                f"or check Chicago Business Direct at {url} [Source 1]."
+            )
+        return answer, False, "Verified fee amount is unavailable in retrieved official records."
+
+    extra = f" ({fee_desc})" if is_valid_field(fee_desc) else ""
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"Official records padi, **{name} (Code {code})** license fee **{fee_amt}**{extra}.\n\n"
+            f"Neenga current fee verify panna alladhu payment submit panna Chicago Business Direct ({url}) use pannalaam [Source 1]."
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"அதிகாரப்பூர்வ பதிவுகளின்படி, **{name} (Code {code})** உரிமக் கட்டணம் **{fee_amt}**{extra}.\n\n"
+            f"Chicago Business Direct ({url}) மூலம் கட்டணத்தைச் செலுத்தலாம் அல்லது சரிபார்க்கலாம் [Source 1]."
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"නිල වාර්තාවලට අනුව, **{name} (Code {code})** බලපත්‍ර ගාස්තුව **{fee_amt}**{extra} වේ.\n\n"
+            f"Chicago Business Direct ({url}) හරහා ගාස්තුව ගෙවීමට හෝ තහවුරු කිරීමට හැක [Source 1]."
+        )
+    elif lang == LanguageCode.SINGLISH:
+        answer = (
+            f"Official records anuwa, **{name} (Code {code})** license fee eka **{fee_amt}**{extra} wenawa.\n\n"
+            f"Chicago Business Direct ({url}) haraha payment karanna puluwan [Source 1]."
+        )
+    else:
+        answer = (
+            f"A **{name} (Code {code})** costs **{fee_amt}**{extra}, according to the available official records.\n\n"
+            f"You can verify the current fee or submit your payment through Chicago Business Direct ({url}) [Source 1]."
+        )
+    return answer, True, "Verified fee details provided from official records."
+
+
+def _format_office_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p.get("service_name")
+    code = p.get("service_code")
+    addr = p.get("office_address") or "121 N. LaSalle St., Room 800, Chicago, IL 60602"
+    phone = p.get("office_phone") or "(312) 744-6060"
+    hours = p.get("office_hours") or "Monday - Friday, 8:30 AM - 4:30 PM"
+    url = p.get("source_url") or "https://www.chicago.gov/bacp"
+
+    has_specific = bool(name and code and code != "N/A")
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        lead = f"**{name} (Code {code})** sambanthapata inquiries matrum applications handle pandradhu " if has_specific else ""
+        answer = (
+            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**:\n\n"
+            f"• **Address:** Small Business Center (SBC), City Hall, {addr}\n"
+            f"• **Business Hours:** {hours}\n"
+            f"• **Phone:** {phone}\n"
+            f"• **Online Portal:** {url} [Source 1]\n\n"
+            f"City Hall Small Business Center-la business hours-la direct-a consultation panna mudiyum."
+        )
+    elif lang == LanguageCode.TAMIL:
+        lead = f"**{name} (Code {code})** தொடர்பான விண்ணப்பங்கள் மற்றும் விசாரணைகளை " if has_specific else ""
+        answer = (
+            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)** கையாள்கிறது:\n\n"
+            f"• **முகவரி:** Small Business Center (SBC), City Hall, {addr}\n"
+            f"• **வேலை நேரம்:** {hours}\n"
+            f"• **தொலைபேசி:** {phone}\n"
+            f"• **இணையதளம்:** {url} [Source 1]"
+        )
+    elif lang == LanguageCode.SINHALA:
+        lead = f"**{name} (Code {code})** සම්බන්ධ අයදුම්පත් " if has_specific else ""
+        answer = (
+            f"{lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)** විසින් හසුරුවනු ලැබේ:\n\n"
+            f"• **ලිපිනය:** Small Business Center (SBC), City Hall, {addr}\n"
+            f"• **වේලාවන්:** {hours}\n"
+            f"• **දුරකථන:** {phone}\n"
+            f"• **නිල වෙබ් අඩවිය:** {url} [Source 1]"
+        )
+    else:
+        service_lead = f"For the **{name} (Code {code})**, applications and inquiries are handled by the " if has_specific else "The "
+        answer = (
+            f"{service_lead}**City of Chicago Department of Business Affairs and Consumer Protection (BACP)**:\n\n"
+            f"• **Address:** Small Business Center (SBC), City Hall, {addr}\n"
+            f"• **Business Hours:** {hours}\n"
+            f"• **Phone:** {phone}\n"
+            f"• **Online Portal:** {url} [Source 1]\n\n"
+            f"In-person consultations and applications can be conducted at City Hall during regular business hours."
+        )
+    return answer, True, "Office contact and address information provided from official records."
+
+
+def _format_eligibility_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    elig = (p["eligibility_summary"] or p.get("overview") or "").strip().rstrip(".")
+    url = p["source_url"]
+
+    if not is_valid_field(elig):
+        if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+            answer = (
+                f"Available official records **{name} (Code {code})** confirm pannudhu, "
+                f"aana verified eligibility qualifications kidaikkala.\n\n"
+                f"City of Chicago BACP ({url}) check panni verify pannunga [Source 1]."
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                f"**{name} (Code {code})** பற்றிய தகவல் உள்ளது, ஆனால் சரிபார்க்கப்பட்ட தகுதி வரம்புகள் இல்லை.\n\n"
+                f"BACP இணையதளத்தை ({url}) பார்க்கவும் [Source 1]."
+            )
+        elif lang == LanguageCode.SINHALA:
+            answer = (
+                f"**{name} (Code {code})** පිළිබඳ නිල වාර්තා ඇත, නමුත් සුදුසුකම් නිර්ණායක නොමැත.\n\n"
+                f"BACP වෙබ් අඩවිය ({url}) පරීක්ෂා කරන්න [Source 1]."
+            )
+        else:
+            answer = (
+                f"The available official records confirm the **{name} (Code {code})**, "
+                f"but do not currently provide verified eligibility qualifications.\n\n"
+                f"Please consult the City of Chicago BACP directly at {url} for current qualification rules. [Source 1]"
+            )
+        return answer, False, "Eligibility criteria unavailable in official records."
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"**{name} (Code {code})** eligibility criteria: {elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"**{name} (Code {code})** தகுதி வரம்புகள்: {elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"**{name} (Code {code})** සඳහා සුදුසුකම්: {elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.SINGLISH:
+        answer = (
+            f"**{name} (Code {code})** sudusukam: {elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+        )
+    else:
+        answer = (
+            f"A **{name} (Code {code})** is intended for {elig}.\n\n"
+            f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
+        )
+    return answer, True, "Eligibility criteria provided from official records."
+
+
+def _format_renewal_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    term = p["license_term_years"]
+    period = p["renewal_period"]
+    url = p["source_url"]
+
+    q_lower = query.lower()
+    asking_for_deadline = "deadline" in q_lower or "due date" in q_lower
+
+    if asking_for_deadline:
+        if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+            answer = (
+                f"Available records-la **{name} (Code {code})**-ku verified renewal deadline kidaikkala.\n\n"
+                f"General-a expiration date-ku munnadi renew panna vendum. "
+                f"City of Chicago BACP ({url}) check pannunga [Source 1]."
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                f"**{name} (Code {code})** உரிமத்திற்கான புதுப்பித்தல் கடைசி தேதி பற்றிய தகவல் இல்லை.\n\n"
+                f"காலாவதியாகும் முன் BACP ({url}) மூலம் புதுப்பிக்கவும் [Source 1]."
+            )
+        elif lang == LanguageCode.SINHALA:
+            answer = (
+                f"**{name} (Code {code})** සඳහා නිශ්චිත අලුත් කිරීමේ අවසන් දිනයක් නොමැත.\n\n"
+                f"කල් ඉකුත්වීමට පෙර BACP ({url}) පරීක්ෂා කරන්න [Source 1]."
+            )
+        else:
+            answer = (
+                f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
+                f"Licenses generally require renewal prior to their expiration date. "
+                f"Please verify your specific license renewal deadline with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) at {url} [Source 1]."
+            )
+        return answer, False, "Specific renewal deadline is unavailable in retrieved records."
+
+    if not is_valid_field(term) and not is_valid_field(period):
+        if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+            answer = (
+                f"Naan **{name} (Code {code})** pathina information kandupidithen, "
+                f"aana renewal process alladhu deadline pathi verified information kidaikkala. "
+                f"BACP-ai thodarpu kolla mudiyum [Source 1]."
+            )
+        elif lang == LanguageCode.TAMIL:
+            answer = (
+                f"**{name} (Code {code})** பற்றிய தகவல் கிடைத்தது, ஆனால் புதுப்பித்தல் விவரங்கள் இல்லை. "
+                f"BACP-ஐத் தொடர்பு கொள்ளவும் [Source 1]."
+            )
+        elif lang == LanguageCode.SINHALA:
+            answer = (
+                f"**{name} (Code {code})** පිළිබඳ තොරතුරු ලැබුණි, නමුත් අලුත් කිරීමේ විස්තර නොමැත [Source 1]."
+            )
+        else:
+            answer = (
+                f"I found information about the **{name} (Code {code})**, "
+                f"but the available official records do not provide enough verified information about the renewal process or renewal deadline. "
+                f"I don't want to guess. Please verify the current renewal requirements with the City of Chicago Department of Business Affairs and Consumer Protection."
+            )
+        return answer, False, "Renewal details unavailable in retrieved records."
+
+    term_str = term if is_valid_field(term) else "2 years"
+    period_str = period if is_valid_field(period) else "every 2 years prior to expiration"
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"**{name} (Code {code})** license **{term_str}** valid-aaga irukkum, matrum **{period_str}** renew panna vendum.\n\n"
+            f"**Renewal Steps:**\n"
+            f"1. City of Chicago holds, debt, matrum building violations illai enbadhai verify pannunga.\n"
+            f"2. Expiration-ku munnadi Chicago Business Direct ({url}) vazhiya renewal application matrum fee submit pannunga [Source 1]."
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"**{name} (Code {code})** உரிமம் **{term_str}** செல்லுபடியாகும், மேலும் **{period_str}** புதுப்பிக்கப்பட வேண்டும்.\n\n"
+            f"**புதுப்பித்தல் படிகள்:**\n"
+            f"1. நிலுவைக் கட்டணங்கள் மற்றும் விதிமீறல்கள் இல்லை என்பதை உறுதிப்படுத்தவும்.\n"
+            f"2. காலாவதியாகும் முன் Chicago Business Direct ({url}) மூலம் புதுப்பித்தல் விண்ணப்பத்தை சமர்ப்பிக்கவும் [Source 1]."
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"**{name} (Code {code})** බලපත්‍රය **{term_str}** වලංගු වන අතර, **{period_str}** අලුත් කළ යුතුය.\n\n"
+            f"**අලුත් කිරීමේ පියවර:**\n"
+            f"1. කිසිදු නගර ණය හෝ නීතිමය ගැටළු නොමැති බව තහවුරු කරන්න.\n"
+            f"2. කල් ඉකුත්වීමට පෙර Chicago Business Direct ({url}) හරහා අයදුම් කරන්න [Source 1]."
+        )
+    else:
+        answer = (
+            f"A **{name} (Code {code})** is valid for **{term_str}**, and renewal is required **{period_str}**.\n\n"
+            f"**Renewal Steps:**\n"
+            f"1. Check that all City of Chicago holds, debt, and building violations are resolved.\n"
+            f"2. Submit your renewal application and fee online via Chicago Business Direct ({url}) prior to expiration [Source 1]."
+        )
+    return answer, True, "Renewal terms and validity provided from official records."
+
+
+def _format_geographic_eligibility_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    url = p["source_url"]
+
+    geo_match = re.search(
+        r"\b(sri lanka|abroad|overseas|foreign|international|outside the (?:us|united states)|india|canada|uk|europe|another country|another state)\b",
+        query,
+        re.I,
+    )
+    location_str = geo_match.group(0).title() if geo_match else "outside Chicago / remotely"
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"Available official records **{name} (Code {code})** Chicago-la irukkira business establishment-ku thevai enbadhai confirm pannudhu, "
+            f"aana {location_str}-la irundhu remote-a apply panna mudiyuma enbadhai specify pannala.\n\n"
+            f"Please City of Chicago BACP alladhu Chicago Business Direct ({url}) check panni verify pannunga [Source 1]."
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"அதிகாரப்பூர்வ பதிவுகள் **{name} (Code {code})** சிகாகோவில் உள்ள வணிகத்திற்கு பொருந்தும் என்பதை உறுதிப்படுத்துகின்றன, "
+            f"ஆனால் {location_str} இல் இருந்து விண்ணப்பிக்க முடியுமா என்பதை குறிப்பிடவில்லை.\n\n"
+            f"தயவுசெய்து Chicago Business Direct ({url}) மூலம் சரிபார்க்கவும் [Source 1]."
+        )
+    elif lang == LanguageCode.SINHALA:
+        answer = (
+            f"**{name} (Code {code})** චිකාගෝ හි ව්‍යාපාර සඳහා අදාළ වන නමුත් {location_str} සිට අයදුම් කළ හැකිද යන්න නිශ්චිතව දක්වා නොමැත.\n\n"
+            f"කරුණාකර Chicago Business Direct ({url}) පරීක්ෂා කරන්න [Source 1]."
+        )
+    else:
+        answer = (
+            f"The available official records confirm that the **{name} (Code {code})** applies to a qualifying business establishment in Chicago, "
+            f"but they do not specify whether an applicant currently residing in {location_str} can apply remotely.\n\n"
+            f"Please verify this requirement with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) "
+            f"or check Chicago Business Direct at {url} [Source 1]."
+        )
+    return answer, False, f"Official records do not establish remote/international applicant eligibility for {location_str}."
+
+
+def _format_comparison_response(profiles: List[Dict[str, Any]], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    if len(profiles) < 2:
+        p = profiles[0]
+        return _format_service_lookup_response(p, query, lang=lang)
+
+    p1, p2 = profiles[0], profiles[1]
+    name1, code1 = p1["service_name"], p1["service_code"]
+    name2, code2 = p2["service_name"], p2["service_code"]
+
+    cat1 = (p1.get("category") or "General").replace("_", " ").title()
+    cat2 = (p2.get("category") or "General").replace("_", " ").title()
+
+    def _sanitize_cell(val: Optional[str], default: str) -> str:
+        if not val or not is_valid_field(val):
+            return default
+        return val.replace("|", ", ")
+
+    fee1 = _sanitize_cell(p1.get("fee_amount"), "Refer to BACP")
+    fee2 = _sanitize_cell(p2.get("fee_amount"), "Refer to BACP")
+    insp1 = _sanitize_cell(p1.get("inspection_required"), "Per Activity")
+    insp2 = _sanitize_cell(p2.get("inspection_required"), "Per Activity")
+    term1 = _sanitize_cell(p1.get("license_term_years"), "2 Years")
+    term2 = _sanitize_cell(p2.get("license_term_years"), "2 Years")
+
+    scope1 = p1.get("overview") or p1.get("eligibility_summary") or name1
+    scope2 = p2.get("overview") or p2.get("eligibility_summary") or name2
+
+    table = (
+        f"Here is a comparison between **{name1}** and **{name2}**:\n\n"
+        f"| Feature | {name1} (Code {code1}) | {name2} (Code {code2}) |\n"
+        f"| :--- | :--- | :--- |\n"
+        f"| **License Code** | `{code1}` | `{code2}` |\n"
+        f"| **Category** | {cat1} | {cat2} |\n"
+        f"| **Fee Amount** | {fee1} | {fee2} |\n"
+        f"| **Inspection** | {insp1} | {insp2} |\n"
+        f"| **License Validity** | {term1} | {term2} |\n\n"
+        f"**Key Differences:**\n"
+        f"• **{name1}:** {scope1} [Source 1]\n"
+        f"• **{name2}:** {scope2} [Source 2]\n\n"
+        f"*Official Portal: https://www.chicago.gov/BusinessDirect*"
+    )
+    return table, True, "Multi-license comparison table generated from official records."
+
+
+def _format_source_evidence_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    legal_ref = p["legal_reference"] or "Municipal Code of Chicago (MCC)"
+    conf = p["source_confidence"] or "VERIFIED"
+    title = p["source_title"]
+    url = p["source_url"]
+
+    answer = (
+        f"This information is authorized by the **City of Chicago Department of Business Affairs and Consumer Protection (BACP)** "
+        f"under **{legal_ref}**.\n\n"
+        f"• **Official Document:** {title}\n"
+        f"• **License Code:** `{code}`\n"
+        f"• **Verification Status:** {conf}\n"
+        f"• **Official Portal:** {url} [Source 1]\n\n"
+        f"*All municipal licensing regulations are governed by the Municipal Code of Chicago.*"
+    )
+    return answer, True, "Official legal reference and source attribution provided."
+
+
+def _format_comprehensive_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    overview = p.get("overview") or "Municipal business license issued by the City of Chicago."
+    elig = p.get("eligibility_summary")
+    fee = p.get("fee_amount") or "Refer to BACP for current fee schedule"
+    docs = p.get("required_documents")
+    steps = p.get("application_steps")
+    url = p["source_url"]
+
+    lines = [
+        f"Here is the comprehensive guide for the **{name} (Code {code})**:\n",
+        f"**1. Overview:**\n{overview}\n",
+    ]
+    if is_valid_field(elig):
+        lines.append(f"**2. Eligibility Criteria:**\n{elig}\n")
+    if is_valid_field(docs):
+        doc_items = [d.strip() for d in re.split(r"[|;]", docs) if d.strip()]
+        doc_bullets = "\n".join(f"• {d}" for d in doc_items)
+        lines.append(f"**3. Required Documents:**\n{doc_bullets}\n")
+    lines.append(f"**4. Licensing Fee:**\n{fee}\n")
+    if is_valid_field(steps):
+        lines.append(f"**5. Application Steps:**\n{steps}\n")
+
+    lines.append(f"*Official Portal: Chicago Business Direct ({url}) [Source 1]*")
+    return "\n".join(lines), True, "Comprehensive licensing guide provided from official records."
+
+
+def _format_general_response(p: Dict[str, Any], query: str, lang: LanguageCode = LanguageCode.ENGLISH) -> Tuple[str, bool, str]:
+    name = p["service_name"]
+    code = p["service_code"]
+    cat = (p.get("category") or "Business Licensing").replace("_", " ").title()
+    overview = p.get("overview") or p.get("eligibility_summary") or "City of Chicago government business licensing service."
+    url = p["source_url"]
+
+    if lang == LanguageCode.THANGLISH or lang == LanguageCode.MIXED:
+        answer = (
+            f"**{name} (Code {code})** ({cat}):\n\n"
+            f"{overview}\n\n"
+            f"Fees, required paperwork, eligibility, alladhu how to apply pathina details thevaiya?\n\n"
+            f"*Official Source: Chicago Business Direct ({url}) [Source 1]*"
+        )
+    elif lang == LanguageCode.TAMIL:
+        answer = (
+            f"**{name} (Code {code})** ({cat}):\n\n"
+            f"{overview}\n\n"
+            f"கட்டணம், தேவையான ஆவணங்கள் அல்லது விண்ணப்ப முறை பற்றிய விவரங்கள் வேண்டுமா?\n\n"
+            f"*Official Source: Chicago Business Direct ({url}) [Source 1]*"
+        )
+    else:
+        answer = (
+            f"Regarding **{name} (Code {code})** ({cat}):\n\n"
+            f"{overview}\n\n"
+            f"Please let me know if you would like information on fees, required paperwork, eligibility, or how to apply.\n\n"
+            f"*Official Source: Chicago Business Direct ({url}) [Source 1]*"
+        )
+    return answer, True, "General service advisory synthesized from official records."
 
 
 def format_multi_intent_response(
     query: str,
     intents: List[Any],
     evidence_bundle: Dict[str, Any],
+    language: LanguageCode = LanguageCode.ENGLISH,
 ) -> Tuple[str, bool, str]:
     """
     Generates a coherent, combined response addressing every detected intent in a multi-intent query.
-    Enforces strict evidence grounding per intent without cross-intent fabrication.
     """
     profiles = extract_service_profiles(evidence_bundle)
     if not profiles:
         return (
-            "I could not find sufficient verified information in the available government sources to answer your specific inquiry. "
-            "To ensure accuracy, please consult the City of Chicago Department of Business Affairs and Consumer Protection (BACP) directly "
-            "or check Chicago Business Direct at https://www.chicago.gov/BusinessDirect.",
+            get_insufficient_evidence_response(language),
             False,
             "No matching government service records were found in the knowledge base."
         )
@@ -489,314 +1405,6 @@ def format_multi_intent_response(
     )
 
     return full_answer, is_all_available, explanation
-
-
-def _format_geographic_eligibility_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    url = p["source_url"]
-
-    geo_match = re.search(
-        r"\b(sri lanka|abroad|overseas|foreign|international|outside the (?:us|united states)|india|canada|uk|europe|another country|another state)\b",
-        query,
-        re.I,
-    )
-    location_str = geo_match.group(0).title() if geo_match else "outside Chicago / remotely"
-
-    answer = (
-        f"The available official records confirm that the **{name} (Code {code})** applies to a qualifying business establishment in Chicago, "
-        f"but they do not specify whether an applicant currently residing in {location_str} can apply remotely.\n\n"
-        f"Please verify this requirement with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) "
-        f"or check Chicago Business Direct at {url} [Source 1]."
-    )
-    return answer, False, f"Official records do not establish remote/international applicant eligibility for {location_str}."
-
-
-def _format_fee_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    fee_amt = p["fee_amount"]
-    fee_desc = p["fee_description"]
-    url = p["source_url"]
-
-    if not is_valid_field(fee_amt):
-        answer = (
-            f"I found the **{name} (Code {code})** in the available official records, "
-            f"but the retrieved evidence does not contain a verified fee amount.\n\n"
-            f"The available government records do not currently provide a verified fee amount for this license. "
-            f"Please verify the current fee with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) "
-            f"or check Chicago Business Direct at {url} [Source 1]."
-        )
-        return answer, False, "Verified fee amount is unavailable in retrieved official records."
-
-    extra = f" ({fee_desc})" if is_valid_field(fee_desc) else ""
-    answer = (
-        f"A **{name} (Code {code})** costs **{fee_amt}**{extra}, according to the available official records.\n\n"
-        f"You can verify the current fee or submit your payment through Chicago Business Direct ({url}) [Source 1]."
-    )
-    return answer, True, "Verified fee details provided from official records."
-
-
-def _format_documents_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    docs = p["required_documents"]
-    url = p["source_url"]
-
-    if not is_valid_field(docs):
-        answer = (
-            f"I found information about the **{name} (Code {code})**, "
-            f"but the available official records do not specify a verified required documents checklist for this license.\n\n"
-            f"Please verify current documentation requirements with the City of Chicago BACP or via Chicago Business Direct at {url} [Source 1]."
-        )
-        return answer, False, "Required documents checklist is unavailable in official records."
-
-    doc_items = [d.strip() for d in re.split(r"[|;]|\n(?:\s*[-•*]\s*)?", docs) if d.strip()]
-    doc_bullets = "\n".join(f"• {d.lstrip('•-* ')}" for d in doc_items)
-
-    answer = (
-        f"For the **{name} (Code {code})**, the required documents include:\n\n"
-        f"{doc_bullets}\n\n"
-        f"These requirements are based on the available official records ({url}) [Source 1]."
-    )
-    return answer, True, "Required documentation list provided from official records."
-
-
-def _format_eligibility_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    elig = (p["eligibility_summary"] or p.get("overview") or "").strip().rstrip(".")
-    url = p["source_url"]
-
-    if not is_valid_field(elig):
-        answer = (
-            f"The available official records confirm the **{name} (Code {code})**, "
-            f"but do not currently provide verified eligibility qualifications.\n\n"
-            f"Please consult the City of Chicago BACP directly at {url} for current qualification rules. [Source 1]"
-        )
-        return answer, False, "Eligibility criteria unavailable in official records."
-
-    answer = (
-        f"A **{name} (Code {code})** is intended for {elig}.\n\n"
-        f"*Official Source: City of Chicago BACP / Chicago Business Direct ({url}) [Source 1]*"
-    )
-    return answer, True, "Eligibility criteria provided from official records."
-
-
-def _format_procedure_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    steps = p["application_steps"]
-    portal = p["application_portal_url"] or p["source_url"]
-    insp = p["inspection_required"]
-    url = p["source_url"]
-
-    if not is_valid_field(steps):
-        steps_formatted = (
-            "1. Determine your specific business activity and required municipal license category.\n"
-            "2. Complete required zoning review and clear any outstanding City debt.\n"
-            "3. Submit your application online through Chicago Business Direct or at City Hall.\n"
-            "4. Complete required inspections (Health, Fire, Buildings) and pay applicable licensing fees."
-        )
-    else:
-        raw_steps = [s.strip() for s in re.split(r"[|;]|\n(?:\s*\d+\.\s*)", steps) if s.strip()]
-        if len(raw_steps) > 1:
-            steps_formatted = "\n".join(f"{i}. {s.lstrip('0123456789. ')}" for i, s in enumerate(raw_steps, 1))
-        else:
-            steps_formatted = steps
-
-    insp_note = f"\n- **Inspection Requirement:** {insp}" if is_valid_field(insp) else ""
-
-    answer = (
-        f"To apply for a **{name} (Code {code})**, follow these steps:\n\n"
-        f"{steps_formatted}{insp_note}\n\n"
-        f"Applications can be submitted online via Chicago Business Direct ({portal}) "
-        f"or in person at City Hall (Small Business Center, 121 N. LaSalle St., Room 800) [Source 1]."
-    )
-    return answer, True, "Application procedure steps provided from official records."
-
-
-def _format_renewal_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    term = p["license_term_years"]
-    period = p["renewal_period"]
-    renew_req = p["renewal_required"]
-    url = p["source_url"]
-
-    q_lower = query.lower()
-    asking_for_deadline = "deadline" in q_lower or "due date" in q_lower
-
-    if asking_for_deadline:
-        answer = (
-            f"The available records do not provide a verified renewal deadline for the **{name} (Code {code})**.\n\n"
-            f"Licenses generally require renewal prior to their expiration date. "
-            f"Please verify your specific license renewal deadline with the City of Chicago Department of Business Affairs and Consumer Protection (BACP) at {url} [Source 1]."
-        )
-        return answer, False, "Specific renewal deadline is unavailable in retrieved records."
-
-    if not is_valid_field(term) and not is_valid_field(period):
-        answer = (
-            f"I found information about the **{name} (Code {code})**, "
-            f"but the available official records do not provide enough verified information about the renewal process or renewal deadline. "
-            f"I don't want to guess. Please verify the current renewal requirements with the City of Chicago Department of Business Affairs and Consumer Protection."
-        )
-        return answer, False, "Renewal details unavailable in retrieved records."
-
-    term_str = term if is_valid_field(term) else "2 years"
-    period_str = period if is_valid_field(period) else "every 2 years prior to expiration"
-
-    answer = (
-        f"A **{name} (Code {code})** is valid for **{term_str}**, and renewal is required **{period_str}**.\n\n"
-        f"**Renewal Steps:**\n"
-        f"1. Check that all City of Chicago holds, debt, and building violations are resolved.\n"
-        f"2. Submit your renewal application and fee online via Chicago Business Direct ({url}) prior to expiration [Source 1]."
-    )
-    return answer, True, "Renewal terms and validity provided from official records."
-
-
-def _format_comparison_response(profiles: List[Dict[str, Any]], query: str) -> Tuple[str, bool, str]:
-    if len(profiles) < 2:
-        p = profiles[0]
-        return _format_service_lookup_response(p, query)
-
-    p1, p2 = profiles[0], profiles[1]
-    name1, code1 = p1["service_name"], p1["service_code"]
-    name2, code2 = p2["service_name"], p2["service_code"]
-
-    cat1 = (p1.get("category") or "General").replace("_", " ").title()
-    cat2 = (p2.get("category") or "General").replace("_", " ").title()
-    
-    def _sanitize_cell(val: Optional[str], default: str) -> str:
-        if not val or not is_valid_field(val):
-            return default
-        # Replace pipe characters so markdown table cells don't break
-        return val.replace("|", ", ")
-
-    fee1 = _sanitize_cell(p1.get("fee_amount"), "Refer to BACP")
-    fee2 = _sanitize_cell(p2.get("fee_amount"), "Refer to BACP")
-    insp1 = _sanitize_cell(p1.get("inspection_required"), "Per Activity")
-    insp2 = _sanitize_cell(p2.get("inspection_required"), "Per Activity")
-    term1 = _sanitize_cell(p1.get("license_term_years"), "2 Years")
-    term2 = _sanitize_cell(p2.get("license_term_years"), "2 Years")
-
-    scope1 = p1.get("overview") or p1.get("eligibility_summary") or name1
-    scope2 = p2.get("overview") or p2.get("eligibility_summary") or name2
-
-    table = (
-        f"Here is a comparison between **{name1}** and **{name2}**:\n\n"
-        f"| Feature | {name1} (Code {code1}) | {name2} (Code {code2}) |\n"
-        f"| :--- | :--- | :--- |\n"
-        f"| **License Code** | `{code1}` | `{code2}` |\n"
-        f"| **Category** | {cat1} | {cat2} |\n"
-        f"| **Fee Amount** | {fee1} | {fee2} |\n"
-        f"| **Inspection** | {insp1} | {insp2} |\n"
-        f"| **License Validity** | {term1} | {term2} |\n\n"
-        f"**Key Differences:**\n"
-        f"• **{name1}:** {scope1} [Source 1]\n"
-        f"• **{name2}:** {scope2} [Source 2]\n\n"
-        f"*Official Portal: https://www.chicago.gov/BusinessDirect*"
-    )
-    return table, True, "Multi-license comparison table generated from official records."
-
-
-def _format_source_evidence_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    legal_ref = p["legal_reference"] or "Municipal Code of Chicago (MCC)"
-    conf = p["source_confidence"] or "VERIFIED"
-    title = p["source_title"]
-    url = p["source_url"]
-
-    answer = (
-        f"This information is authorized by the **City of Chicago Department of Business Affairs and Consumer Protection (BACP)** "
-        f"under **{legal_ref}**.\n\n"
-        f"• **Official Document:** {title}\n"
-        f"• **License Code:** `{code}`\n"
-        f"• **Verification Status:** {conf}\n"
-        f"• **Official Portal:** {url} [Source 1]\n\n"
-        f"*All municipal licensing regulations are governed by the Municipal Code of Chicago.*"
-    )
-    return answer, True, "Official legal reference and source attribution provided."
-
-
-def _format_office_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    addr = p["office_address"] or "121 N. LaSalle St., Room 800, Chicago, IL 60602"
-    phone = p["office_phone"] or "(312) 744-6060"
-    hours = p["office_hours"] or "Monday - Friday, 8:30 AM - 4:30 PM"
-    url = p["source_url"] or "https://www.chicago.gov/bacp"
-
-    answer = (
-        f"The **City of Chicago Department of Business Affairs and Consumer Protection (BACP)** is located at:\n\n"
-        f"• **Address:** Small Business Center (SBC), City Hall, {addr}\n"
-        f"• **Business Hours:** {hours}\n"
-        f"• **Phone:** {phone}\n"
-        f"• **Online Portal:** {url} [Source 1]\n\n"
-        f"In-person consultations and applications can be conducted at City Hall during regular business hours."
-    )
-    return answer, True, "Office contact and address information provided from official records."
-
-
-def _format_service_lookup_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    cat = (p.get("category") or "Business Licensing").replace("_", " ").title()
-    overview = p.get("overview") or p.get("eligibility_summary") or "Municipal business license issued by the City of Chicago."
-    url = p["source_url"]
-
-    answer = (
-        f"For your business inquiry, you will need a **{name} (License Code: {code})**.\n\n"
-        f"• **License Category:** {cat}\n"
-        f"• **Scope & Purpose:** {overview}\n\n"
-        f"Would you like details on the fees, required documents, or application procedure?\n\n"
-        f"*Official Source: Chicago Business Direct / BACP ({url}) [Source 1]*"
-    )
-    return answer, True, "License identification and overview provided from official records."
-
-
-def _format_comprehensive_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    cat = (p.get("category") or "Business Licensing").replace("_", " ").title()
-    overview = p.get("overview") or "Municipal business license issued by the City of Chicago."
-    elig = p.get("eligibility_summary")
-    fee = p.get("fee_amount") or "Refer to BACP for current fee schedule"
-    docs = p.get("required_documents")
-    steps = p.get("application_steps")
-    url = p["source_url"]
-
-    lines = [
-        f"Here is the comprehensive guide for the **{name} (Code {code})**:\n",
-        f"**1. Overview:**\n{overview}\n",
-    ]
-    if is_valid_field(elig):
-        lines.append(f"**2. Eligibility Criteria:**\n{elig}\n")
-    if is_valid_field(docs):
-        doc_items = [d.strip() for d in re.split(r"[|;]", docs) if d.strip()]
-        doc_bullets = "\n".join(f"• {d}" for d in doc_items)
-        lines.append(f"**3. Required Documents:**\n{doc_bullets}\n")
-    lines.append(f"**4. Licensing Fee:**\n{fee}\n")
-    if is_valid_field(steps):
-        lines.append(f"**5. Application Steps:**\n{steps}\n")
-
-    lines.append(f"*Official Portal: Chicago Business Direct ({url}) [Source 1]*")
-    return "\n".join(lines), True, "Comprehensive licensing guide provided from official records."
-
-
-def _format_general_response(p: Dict[str, Any], query: str) -> Tuple[str, bool, str]:
-    name = p["service_name"]
-    code = p["service_code"]
-    cat = (p.get("category") or "Business Licensing").replace("_", " ").title()
-    overview = p.get("overview") or p.get("eligibility_summary") or "City of Chicago government business licensing service."
-    url = p["source_url"]
-
-    answer = (
-        f"Regarding **{name} (Code {code})** ({cat}):\n\n"
-        f"{overview}\n\n"
-        f"Please let me know if you would like information on fees, required paperwork, eligibility, or how to apply.\n\n"
-        f"*Official Source: Chicago Business Direct ({url}) [Source 1]*"
-    )
-    return answer, True, "General service advisory synthesized from official records."
 
 
 def calibrate_confidence_for_intent(

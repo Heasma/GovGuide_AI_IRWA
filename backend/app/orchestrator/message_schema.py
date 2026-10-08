@@ -148,6 +148,9 @@ class NLPAnalysis(BaseModel):
     keywords: List[str] = Field(default_factory=list)
     is_safe: bool = True
     confidence: float = 1.0
+    language: Optional[str] = "en"
+    is_multilingual: bool = False
+
 
 
 class EvidenceResult(BaseModel):

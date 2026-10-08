@@ -141,11 +141,21 @@ class ResponseVerificationAgent:
             domain=domain_str,
         )
 
+        # ── Language Detection ────────────────────────────────────────────────
+        lang = "en"
+        if isinstance(nlp_analysis_data, dict):
+            lang = nlp_analysis_data.get("language") or "en"
+        if not lang or lang == "en":
+            from app.nlp.language_detector import resolve_query_language
+            lang = resolve_query_language(user_query)
+
         # ── Step 1: Insufficient Evidence Handling ────────────────────────────
         if not sufficient or retrieval_confidence < self._confidence_threshold:
             domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
+            from app.agents.advisory_agent.intent_formatter import get_insufficient_evidence_response
+            insufficient_ans = get_insufficient_evidence_response(lang)
             result = ResponseResultPayload(
-                answer=INSUFFICIENT_EVIDENCE_RESPONSE,
+                answer=insufficient_ans,
                 confidence_score=0.0,
                 confidence_label=ConfidenceLabel.INSUFFICIENT,
                 domain=domain_enum,
@@ -161,6 +171,7 @@ class ResponseVerificationAgent:
             return self._wrap_result(message, result)
 
         # ── Step 2: Extract Intent ────────────────────────────────────────────
+        from app.orchestrator.message_schema import Intent
         intent_obj = Intent.GENERAL
         intents_list = []
         if isinstance(nlp_analysis_data, dict):
@@ -189,6 +200,7 @@ class ResponseVerificationAgent:
         from app.agents.advisory_agent.intent_formatter import (
             format_intent_response,
             calibrate_confidence_for_intent,
+            get_insufficient_evidence_response,
         )
 
         try:
@@ -204,7 +216,7 @@ class ResponseVerificationAgent:
         if self._is_error_output(raw_answer):
             logger.warning("llm_unavailable_synthesizing_from_evidence", raw_output=raw_answer)
             raw_answer, is_target_available, synth_explanation = format_intent_response(
-                user_query, intent_obj, evidence_bundle_data, intents=intents_list
+                user_query, intent_obj, evidence_bundle_data, intents=intents_list, language=lang
             )
         else:
             # Check if LLM response indicates missing target info
@@ -226,8 +238,9 @@ class ResponseVerificationAgent:
         )
         domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.BUSINESS_LICENSE
 
+        fallback_ans = get_insufficient_evidence_response(lang)
         result = ResponseResultPayload(
-            answer=raw_answer if validation.passed else INSUFFICIENT_EVIDENCE_RESPONSE,
+            answer=raw_answer if validation.passed else fallback_ans,
             confidence_score=final_score,
             confidence_label=label,
             domain=domain_enum,

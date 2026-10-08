@@ -55,8 +55,12 @@ Unlike ungrounded generic chatbots that hallucinate regulatory requirements and 
 
 ## 🎯 Key Capabilities & System Features
 
-1. **3 Interacting Intelligent Agents**:
-   - **Query Understanding Agent**: Extracts entities, classifies intent across 8 categories, cleanses inputs, expands synonyms, and generates structured query parameters.
+1. **Multilingual, Thanglish & Typo-Tolerant Understanding**:
+   - Understands native English, Tamil script (தமிழ்), Sinhala script (සිංහල), Thanglish (Tamil in Latin script), Singlish (Sinhala in Latin script), and code-mixed inputs.
+   - Robust to single/multiple spelling mistakes and keyboard typos via high-precision initial-character constrained Damerau-Levenshtein distance.
+   - Normalizes casual phrasing and abbreviations (LBL, PPA, BACP, CDPH, SBC, biz lic, docs, reqs) without intent distortion.
+2. **3 Interacting Intelligent Agents**:
+   - **Query Understanding Agent**: Normalizes multilingual queries, extracts entities, classifies intent, expands synonyms, and generates structured query parameters.
    - **Retrieval Agent**: Searches 504 canonical knowledge chunks across 56 government services using hybrid BM25 and vector search with Reciprocal Rank Fusion.
    - **Response / Verification Agent**: Synthesizes verified answers citing official sources, eliminates hallucinations, and provides grounded fallbacks if external LLMs are unavailable.
 2. **Explicit Agent Communication Protocol**:

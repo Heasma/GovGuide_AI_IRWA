@@ -103,9 +103,9 @@ The architecture is partitioned into six decoupled, single-responsibility layers
 | Attribute | Agent 1: Query Understanding Agent | Agent 2: Retrieval Agent | Agent 3: Response / Verification Agent |
 | :--- | :--- | :--- | :--- |
 | **Agent Identifier** | `AgentId.QUERY_AGENT` | `AgentId.RETRIEVAL_AGENT` | `AgentId.RESPONSE_AGENT` |
-| **Primary Input** | Natural Language Query (`raw_query`) | `StructuredQueryPayload` | `EvidenceBundle` + User Query |
-| **Core Responsibilities** | NLP preprocessing, query expansion, intent detection (8 classes), NER (services, codes, orgs, fees, dates), safety scan | BM25 search, semantic vector search, Reciprocal Rank Fusion (RRF), retrieval confidence scoring | Strict prompt synthesis, LLM generation, grounding check, citation verification, hallucination suppression |
-| **Primary Output** | `StructuredQueryPayload` | `RetrievalResultPayload` (`EvidenceBundle`) | `ResponseResultPayload` (`QueryResponse`) |
+| **Primary Input** | Natural Language Query (`raw_query`) in English, Tamil, Sinhala, Thanglish, or Mixed | `StructuredQueryPayload` | `EvidenceBundle` + User Query |
+| **Core Responsibilities** | Multilingual & Thanglish normalization, typo/spelling correction, abbreviation expansion, conservative intent detection, domain NER & codes, pre-normalization security scan | BM25 search, semantic vector search, Reciprocal Rank Fusion (RRF), retrieval confidence scoring | Strict prompt synthesis, LLM generation, grounding check, citation verification, hallucination suppression |
+| **Primary Output** | `StructuredQueryPayload` (normalized query, detected language, intent, entities) | `RetrievalResultPayload` (`EvidenceBundle`) | `ResponseResultPayload` (`QueryResponse`) |
 | **Failure Mode** | Returns `VALIDATION_FAILED` or `INJECTION_DETECTED` | Returns `RETRIEVAL_FAILED` with safe error payload | Synthesizes grounded fallback from evidence or safe refusal |
 
 ---
