@@ -63,6 +63,14 @@ _EXACT_OR_IDIOMATIC_PATTERNS: List[Tuple[re.Pattern, str]] = [
         "i need 56 government services summary"
     ),
     (
+        re.compile(r"^\s*(?:(?:ennaku|enakku|enaku)\s+)?(?:ella|ellam|yella|yellam)\s+(?:business\s+|government\s+)?(?:licen[cs]e|licen[cs]es|licnce|licnces|services?)(?:s)?(?:\s+(?:pathium|pathiyum|pathina|pathi|oda))?\s+summary\s*(?:venum|vendum|kudunga|theva|thevai)\??\s*$", re.I),
+        "give me summary of all business licenses"
+    ),
+    (
+        re.compile(r"\b(?:(?:ennaku|enakku|enaku)\s+)?(?:ella|ellam|yella|yellam)\s+(?:business\s+|government\s+)?(?:licen[cs]e|licen[cs]es|licnce|licnces|services?)(?:s)?(?:\s+(?:pathium|pathiyum|pathina|pathi|oda))?\s+summary\s*(?:venum|vendum|kudunga|theva|thevai)\??", re.I),
+        "give me summary of all business licenses"
+    ),
+    (
         re.compile(r"\b(?:available|all)\s+(?:56\s+)?(?:business\s+|government\s+)?(?:licen[cs]e|services?)(?:s)?\s+(?:list|options|summary)\s*(?:sollunga|kudunga|kaatunga)\??", re.I),
         "show all available business licenses"
     ),
@@ -85,6 +93,10 @@ _EXACT_OR_IDIOMATIC_PATTERNS: List[Tuple[re.Pattern, str]] = [
     (
         re.compile(r"^\s*licen[cs]e(?:s)?\s+(?:edukanum|edukkanum|edukkanam|edukkan|edukan|vanganum|venum|theva|thevai)\??\s*$", re.I),
         "i need to obtain a license"
+    ),
+    (
+        re.compile(r"^\s*(?:ennaku|enakku|enaku)?\s*licen[cs]e(?:s)?\s*(?:pathi\s+)?help\s+(?:venum|vendum|theva|thevai|kudunga|panreengala)\??\s*$", re.I),
+        "i need help regarding license"
     ),
 
     # "naan dress shop start panna poren" -> "what license is required to start a dress shop"
@@ -318,6 +330,14 @@ _TAMIL_WORD_MAP: Dict[str, str] = {
     "paththi": "about",
     "patri": "about",
     "patthi": "about",
+    "pathi": "about",
+    "pathina": "about",
+    "pathium": "about",
+    "pathiyum": "about",
+    "ella": "all",
+    "ellam": "all",
+    "yella": "all",
+    "yellam": "all",
 }
 
 _SINHALA_WORD_MAP: Dict[str, str] = {

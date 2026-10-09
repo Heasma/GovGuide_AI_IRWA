@@ -128,9 +128,63 @@ async def test_query_thanglish_catalog_56_services_venum(orchestrator, db_servic
 
 
 @pytest.mark.anyio
+async def test_query_thanglish_catalog_ella_licnce_pathium_summary_venum(orchestrator, db_service_map):
+    """
+    Test G: "ennaku ella licnce pathium summary venum"
+    Expected:
+    1. Routes to Intent.LICENSE_CATALOG
+    2. Dynamic retrieval of all 56 canonical records from GovernmentService DB
+    3. Deduplication on canonical service_code
+    4. Service code and name come from the same database record
+    5. Returns all 56 services
+    6. Shows verified summary or fallback 'Summary unavailable in the current verified knowledge base.'
+    7. No hardcoded or invented descriptions
+    """
+    query = "ennaku ella licnce pathium summary venum"
+    
+    # 1. Confirm intent classification
+    qus = QueryUnderstandingService()
+    qu_res = qus.understand_query(query)
+    assert qu_res.intent == Intent.LICENSE_CATALOG
+    assert qu_res.is_ambiguous is False
+    assert qu_res.search_parameters.get("retrieval_required") is True
+
+    # 2. Live API response
+    resp = await orchestrator.process_query(query, request_id="test-56-ella")
+    assert resp.is_conversational is False
+    assert resp.confidence_label != ConfidenceLabel.INSUFFICIENT
+
+    pattern = re.compile(r"(\d+)\.\s+(.*?)\s+—\s+Code:\s+([A-Za-z0-9_-]+)\n\s+Summary:\s+(.*?)(?=\n\d+\.|\Z)", re.DOTALL)
+    matches = pattern.findall(resp.answer)
+    assert len(matches) == 56, f"Expected 56 distinct services, got {len(matches)}"
+
+    seen_codes = set()
+    for idx_str, disp_name, s_code, summary_text in matches:
+        assert s_code in db_service_map, f"Service code {s_code} not found in DB!"
+        assert s_code not in seen_codes, f"Duplicate service code {s_code} found!"
+        seen_codes.add(s_code)
+
+        db_record = db_service_map[s_code]
+        db_name = db_record["name"]
+        assert disp_name in db_name or db_name in disp_name or "Service " in disp_name, (
+            f"Name mismatch for code {s_code}: displayed '{disp_name}' vs DB '{db_name}'"
+        )
+
+        summary_clean = summary_text.strip()
+        assert len(summary_clean) > 0
+        if "Summary unavailable in the current verified knowledge base." in summary_clean or "Summary information is not available" in summary_clean:
+            db_desc = db_record.get("description") or ""
+            assert not db_desc or db_desc in ("NOT_AVAILABLE", "N/A", "NONE"), (
+                f"False missing summary for code {s_code}"
+            )
+
+    assert len(seen_codes) == 56
+
+
+@pytest.mark.anyio
 async def test_regression_queries(orchestrator):
     """
-    Test G: Existing specific queries MUST NOT break:
+    Test H: Existing specific queries MUST NOT break:
     - restaurant -> correct relevant service (1006)
     - dress shop -> correct relevant service (1010)
     - generic "I want to start a business" -> clarification
@@ -181,7 +235,7 @@ async def test_grounding_integrity_56_records(orchestrator, db_service_map):
         # Verify summary is grounded: either non-empty real description or canonical safe fallback
         summary_clean = summary_text.strip()
         assert len(summary_clean) > 0
-        if "Summary information is not available" in summary_clean:
+        if "Summary unavailable in the current verified knowledge base." in summary_clean or "Summary information is not available" in summary_clean:
             db_desc = db_record.get("description") or ""
             assert not db_desc or db_desc in ("NOT_AVAILABLE", "N/A", "NONE"), (
                 f"False missing summary for code {s_code}"

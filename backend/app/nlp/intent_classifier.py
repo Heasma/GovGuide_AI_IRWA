@@ -118,6 +118,13 @@ _INTENT_PATTERNS: Dict[Intent, List[str]] = {
         "inga enna enna business license irukku", "inga enna enna business licence irukku",
         "enna enna business license", "enna enna business licence",
         "enna enna license", "enna enna licence",
+        "ella licnce pathium summary venum", "ella licence pathium summary venum",
+        "ella license pathium summary venum", "ennaku ella licnce pathium summary venum",
+        "ennaku ella licence pathium summary venum", "ennaku ella license pathium summary venum",
+        "ella license summary venum", "ella licence summary venum",
+        "give me summary of all business licenses", "i need a summary of all business licenses",
+        "summary of all business licenses", "summary of all business licences",
+        "all business licenses summary", "all business licences summary",
     ],
     Intent.SERVICE_LOOKUP: [
         "what is license", "what is licence", "what is service", "what is code",
@@ -152,11 +159,13 @@ _INTENT_REGEX_MAP: List[Tuple[Intent, str]] = [
         r"what\s+licen[cs]es?\s+do\s+you\s+(?:have|support|offer)|"
         r"what\s+are\s+(?:the\s+)?available\s+(?:business\s+)?licen[cs]es?|"
         r"what\s+business\s+licen[cs]es?\s+(?:can\s+i\s+apply\s+for\s+here|are\s+available\s+here)|"
+        r"(?:i\s+need\s+)?(?:a\s+)?summary\s+of\s+(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)|"
         r"(?:i\s+need\s+)?(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)\s+(?:summary|options|catalog|list|overview)|"
         r"(?:give\s+me\s+)?(?:a\s+)?summary\s+of\s+(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)|"
         r"show\s+(?:me\s+)?(?:all\s+)?(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)|"
-        r"all\s+(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)(?:\s+types|\s+summary|\s+services)?|"
+        r"all\s+(?:56\s+)?(?:government\s+|business\s+)?(?:services?|licen[cs]es?)(?:\s+types|\s+summary|\s+services|\s+pathium)?|"
         r"all\s+(?:business\s+)?licen[cs]e\s+types|"
+        r"(?:(?:ennaku|enakku|enaku)\s+)?(?:ella|ellam|yella|yellam)\s+(?:business\s+|government\s+)?(?:licen[cs]e|licnce|services?)(?:s)?(?:\s+(?:pathium|pathiyum|pathina|pathi|oda))?\s+summary(?:\s+(?:venum|vendum|kudunga|theva|thevai))?|"
         r"(?:(?:inga|ingga|inge|ingey)\s+)?(?:enna+\s*[-]?\s*enna+|enna+enna+|yena+\s*[-]?\s*yena+|yena+yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)|"
         r"(?:inga|ingga|inge|ingey)\s+(?:enna+|yena+)\s+(?:business\s+|government\s+)?(?:licen[cs]e|services?)"
         r")\b"
@@ -227,14 +236,14 @@ _CONVERSATION_TYPE_PATTERNS = [
         r"^(thank\s+you,?\s*goodbye|thanks,?\s*goodbye|thank\s+you\s+and\s+goodbye|goodbye|bye\s+bye|bye|see\s+you|have\s+a\s+(?:great|good|nice)\s+day|farewell)[!.]*$"
     ]),
     ("THANKS", [
-        r"^(thank\s+you\s+for\s+(?:your\s+|the\s+)?information|thanks\s+for\s+(?:your\s+|the\s+)?information|thank\s+you\s+for\s+(?:your\s+|the\s+)?help|thanks\s+for\s+(?:your\s+|the\s+)?help|great,?\s*thank\s+you|great,?\s*thanks|thank\s+you\s+so\s+much|thanks\s+so\s+much|many\s+thanks|thank\s+you\s+very\s+much|i\s+appreciate\s+(?:your\s+)?help|i\s+appreciate\s+it|appreciate\s+it|much\s+appreciated|thank\s+you|thanks)[!.]*$"
+        r"^(?:ok|okay|seri|sari|alright|all\s+right|great|super)?\s*,?\s*(?:thank\s+you\s+for\s+(?:your\s+|the\s+)?information|thanks\s+for\s+(?:your\s+|the\s+)?information|thank\s+you\s+for\s+(?:your\s+|the\s+)?help|thanks\s+for\s+(?:your\s+|the\s+)?help|great,?\s*thank\s+you|great,?\s*thanks|thank\s+you\s+so\s+much|thanks\s+so\s+much|thanks\s+a\s+lot|thank\s+you\s+a\s+lot|many\s+thanks|thank\s+you\s+very\s+much|i\s+appreciate\s+(?:your\s+)?help|i\s+appreciate\s+it|appreciate\s+it|much\s+appreciated|thank\s+you\s+bro|thanks\s+bro|thank\s+you|thanks|nandri|mikka\s+nandri|sthuthi|bohoma\s+sthuthi)[!.]*$"
     ]),
     ("ACKNOWLEDGEMENT", [
-        r"^(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|okay,?\s*got\s+it|ok,?\s*got\s+it|thanks,?\s*got\s+it|thank\s+you,?\s*got\s+it|got\s+it,?\s*thanks|got\s+it,?\s*thank\s+you|got\s+it|understood|alright|all\s+right|okay|ok|makes\s+sense|perfect|sounds\s+good|cool)[!.]*$",
+        r"^(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|okay,?\s*got\s+it|ok,?\s*got\s+it|thanks,?\s*got\s+it|thank\s+you,?\s*got\s+it|got\s+it,?\s*thanks|got\s+it,?\s*thank\s+you|got\s+it|understood|alright|all\s+right|okay|ok|seri|sari|hari|ela|makes\s+sense|perfect|great|super|sounds\s+good|cool)[!.]*$",
         r"\b(you(?:'re|\s+are|\s+re)?\s+welcome|your\s+welcome|happy\s+to\s+help|no\s+problem|my\s+pleasure|don't\s+mention\s+it|that'?s\s+(?:very\s+)?helpful|that\s+is\s+(?:very\s+)?helpful|this\s+is\s+(?:very\s+)?helpful)\b"
     ]),
     ("GREETING", [
-        r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings|hi\s+there|hello\s+there|howdy)[!.]*$"
+        r"^(hi|hello|hey|good\s+(morning|afternoon|evening)|greetings|hi\s+there|hello\s+there|howdy|vanakkam|ayubowan)[!.]*$"
     ]),
 ]
 
@@ -248,7 +257,8 @@ _SUBSTANTIVE_QUESTION_PATTERNS = [
     r"\b(difference\s+between|compare|comparison|versus|vs)\b",
     r"\b(sri\s+lanka|abroad|outside\s+the\s+us|remotely|foreign\s+national|international\s+applicant)\b",
     r"\b(start\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business|open\s+(?:a\s+)?(?:new\s+)?(?:food\s+|restaurant\s+|retail\s+)?business)\b",
-    r"\b(food\s+business|restaurant|retail\s+food|business\s+license|licenses?)\b",
+    r"\b(food\s+business|restaurant|retail\s+food|business\s+license|licenses?|licences?)\b",
+    r"\b(ithukku|ithoda|ithuku|ithula|ennaku|theva|thevai|venum|vendum|kudunga|sollunga|solla|evvalavu|evalavu|epdi|yepdi|enna|yena)\b",
 ]
 
 _DOMAIN_KEYWORDS_BLOCKING_CONV = re.compile(
@@ -285,15 +295,7 @@ def is_conversational_query(query: str) -> bool:
 
     lower = query.lower().strip()
 
-    # If domain keywords are present, this is NOT a purely conversational query
-    if _DOMAIN_KEYWORDS_BLOCKING_CONV.search(lower):
-        # Unless it's an exact greeting/thanks without question structure
-        is_exact_greeting = bool(re.match(r"^(hi|hello|hey|good\s+(morning|afternoon|evening))[!.]*$", lower, re.I))
-        is_exact_thanks = bool(re.match(r"^(thank\s+you|thanks|much\s+appreciated)[!.]*$", lower, re.I))
-        if not (is_exact_greeting or is_exact_thanks):
-            return False
-
-    conv_type = classify_conversation_type(query)
+    conv_type = classify_conversation_type(lower)
     if not conv_type:
         return False
 

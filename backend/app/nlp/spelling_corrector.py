@@ -38,6 +38,9 @@ _DIRECT_TYPO_MAP: Dict[str, str] = {
     "licenss": "license",
     "lisence": "license",
     "licnse": "license",
+    "licnce": "license",
+    "licnces": "licenses",
+    "licns": "license",
     "lisense": "license",
     "licenc": "license",
     "licens": "license",
@@ -204,7 +207,7 @@ _DIRECT_TYPO_MAP: Dict[str, str] = {
     "comisary": "commissary",
     "commisary": "commissary",
 
-    # Abbreviations and Short Forms
+    # Abbreviations and Short Forms / Common Typos
     "biz": "business",
     "lic": "license",
     "docs": "documents",
@@ -212,6 +215,11 @@ _DIRECT_TYPO_MAP: Dict[str, str] = {
     "reqs": "requirements",
     "req": "requirement",
     "proc": "procedure",
+    "thre": "the",
+    "teh": "the",
+    "tht": "that",
+    "regardin": "regarding",
+    "regardng": "regarding",
 }
 
 # ── Domain Lexicon for Edit-Distance Verification ────────────────────────────

@@ -243,29 +243,36 @@ class QueryUnderstandingService:
         intents = classify_intents(normalized_query)
         intent = intents[0] if intents else Intent.GENERAL
 
-        conv_type = classify_conversation_type(normalized_query)
-        is_conversational = is_conversational_query(normalized_query) or intent in (
+        conv_type = classify_conversation_type(normalized_query) or classify_conversation_type(raw_query)
+        is_conversational = is_conversational_query(normalized_query) or is_conversational_query(raw_query) or intent in (
             Intent.CONVERSATIONAL, Intent.THANKS, Intent.ACKNOWLEDGEMENT,
             Intent.GOODBYE, Intent.GREETING
         )
+        if is_conversational:
+            intent = Intent.CONVERSATIONAL
+            intents = [Intent.CONVERSATIONAL]
         retrieval_required = not is_conversational
 
-        # ── Step 7: Domain Classification ─────────────────────────────────────
         # ── Step 7: Domain Classification & Canonical Service Resolution ──────
         from app.nlp.service_resolver import get_service_resolver
         resolver = get_service_resolver()
 
-        resolved_code, resolved_name, resolve_score = resolver.resolve(normalized_query)
-        if not resolved_code:
-            resolved_code, resolved_name, resolve_score = resolver.resolve(raw_query)
-        if not resolved_code and context_entity:
-            resolved_code, resolved_name, resolve_score = resolver.resolve(context_entity)
+        resolved_code, resolved_name, resolve_score = (None, None, 0.0)
+        is_unknown_svc, unknown_svc_name = False, None
+        is_generic_svc = False
 
-        is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(normalized_query)
-        if not is_unknown_svc:
-            is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(raw_query)
+        if not is_conversational:
+            resolved_code, resolved_name, resolve_score = resolver.resolve(normalized_query)
+            if not resolved_code:
+                resolved_code, resolved_name, resolve_score = resolver.resolve(raw_query)
+            if not resolved_code and context_entity:
+                resolved_code, resolved_name, resolve_score = resolver.resolve(context_entity)
 
-        is_generic_svc = resolver.is_generic_service_query(normalized_query) or resolver.is_generic_service_query(raw_query)
+            is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(normalized_query)
+            if not is_unknown_svc:
+                is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(raw_query)
+
+            is_generic_svc = resolver.is_generic_service_query(normalized_query) or resolver.is_generic_service_query(raw_query)
 
         domain = classify_domain(normalized_query)
         is_supported = domain in SUPPORTED_DOMAINS
@@ -409,16 +416,8 @@ class QueryUnderstandingService:
                 clarification_type = "retail_goods"
                 retrieval_required = False
 
-            # 3. Generic Business / Ambiguous License request
-            elif business_activity.activity_type == BusinessActivityType.GENERIC_BUSINESS or bool(re.search(
-                r"\b(which\s+license|what\s+license|need\s+(?:to\s+get\s+|to\s+obtain\s+|a\s+)?license|want\s+(?:to\s+get\s+|to\s+obtain\s+|a\s+)?license|obtain\s+a\s+license|get\s+a\s+license|licen[cs]e\s+(?:venum|edukanum|vanganum)|not\s+specified\s+business|enna\s+business\s+nu\s+sollala|business\s+licen[cs]e\s+theva|licen[cs]e\s+edukanum|licen[cs]e\s+venum)\b",
-                raw_query + " " + normalized_query,
-                re.I,
-            )) or bool(re.search(
-                r"^\s*(?:i\s+need|i\s+want|need|want|get|obtain|how\s+can\s+i\s+get)?\s*(?:a\s+)?(?:business\s+)?licen[cs]e\s*\??\s*$",
-                normalized_query,
-                re.I,
-            )):
+            # 3. Generic Business / Ambiguous License request / Vague license inquiry
+            else:
                 needs_clarification = True
                 clarification_type = "business_type"
                 retrieval_required = False

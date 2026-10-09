@@ -261,31 +261,30 @@ def get_clarification_response(
             "Please specify your question or the business type you are interested in."
         )
 
-    # 4. Default business_type clarification
+    # 4. Default business_type / license inquiry clarification
     if lang in (LanguageCode.THANGLISH, LanguageCode.MIXED):
         return (
-            "Sure. Licence edukkanum-na, unga business type enna-nu sollunga. "
-            "Food business, retail shop, restaurant madhiri enna type business-nu sonna, "
-            "available official records based-a relevant licence identify panna mudiyum."
+            "Sure, I can help. Ungalukku endha licence pathi theriyanum? "
+            "Licence name, licence code, alladhu neenga start panna pora business type sonna, "
+            "correct-aana information solla mudiyum."
         )
     elif lang == LanguageCode.TAMIL:
         return (
-            "நிச்சயமாக. உங்களுக்கு எந்த வகை வணிகத்திற்கான உரிமம் தேவை என்பதைக் கூறுங்கள் "
-            "(உதாரணமாக: உணவு வணிகம், சில்லறை கடை, உணவகம்)."
+            "நிச்சயமாக, நான் உதவ முடியும். நீங்கள் எந்த உரிமத்தைப் பற்றி கேட்கிறீர்கள்? "
+            "உரிமத்தின் பெயர், உரிமக் குறியீடு அல்லது நீங்கள் தொடங்க திட்டமிட்டுள்ள வணிக வகையைக் கூறுங்கள்."
         )
     elif lang == LanguageCode.SINHALA:
         return (
-            "ඔබට අවශ්‍ය බලපත්‍රය හඳුනා ගැනීමට කරුණාකර ඔබේ ව්‍යාපාර වර්ගය සඳහන් කරන්න "
-            "(උදාහරණයක් ලෙස: ආහාර ව්‍යාපාර, සිල්ලර වෙළඳසැල්, ආපනශාලා)."
+            "Sure, මට උදව් කළ හැක. ඔබ විමසන්නේ කුමන බලපත්‍රය පිළිබඳවද? "
+            "බලපත්‍රයේ නම, බලපත්‍ර කේතය හෝ ඔබ ආරම්භ කිරීමට බලාපොරොත්තු වන ව්‍යාපාර වර්ගය සඳහන් කරන්න."
         )
     elif lang == LanguageCode.SINGLISH:
         return (
-            "Sure. Oyata ganna ona license eka mokakda kiyala business type eka kiyanna "
-            "(e.g., food business, retail store, restaurant wage)."
+            "Sure, I can help. Oyata ona mona license ekada kiyala license name, code hari business type eka hari kiyanna."
         )
     return (
-        "Sure! To help you identify the right license, could you please specify your business type? "
-        "For example, whether it is a food business, retail store, or restaurant."
+        "Sure, I can help. Which license are you asking about? "
+        "You can provide the license name, license code, or the business type you are planning to operate."
     )
 
 
@@ -400,9 +399,9 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
                 "Ungalukku enna help thevai? Business licenses (Retail Food, Limited Business), "
                 "application procedure, documents, fees, alladhu City department offices pathi kekkalaam."
             )
-        if conv_type == "THANKS" or "nandri" in q or "thanks" in q:
-            return "You're welcome! Ungalukku vera edhavadhu information thevaipatta kelunga."
-        return "You're welcome! Edhavadhu questions irundha sollunga."
+        if conv_type in ("THANKS", "ACKNOWLEDGEMENT") or any(w in q for w in ("nandri", "thanks", "ok", "okay", "seri", "sari", "got it", "bro")):
+            return "You're welcome! 😊 Ungalukku vera edhavadhu information thevaipatta kelunga."
+        return "You're welcome! 😊 Edhavadhu questions irundha sollunga."
 
     if lang == LanguageCode.TAMIL:
         if conv_type == "GREETING" or "வணக்கம்" in query:
@@ -411,9 +410,9 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
                 "உங்களுக்கு எவ்வாறு உதவ முடியும்? வணிக உரிமங்கள், தேவையான ஆவணங்கள், "
                 "கட்டணம் அல்லது விண்ணப்ப முறைகள் பற்றி நீங்கள் கேட்கலாம்."
             )
-        if conv_type == "THANKS" or "நன்றி" in query:
-            return "மிக்க மகிழ்ச்சி! மேலும் ஏதேனும் தகவல் தேவைப்பட்டால் கேளுங்கள்."
-        return "மிக்க மகிழ்ச்சி! உங்களுக்கு உதவ எப்போதும் தயாராக உள்ளேன்."
+        if conv_type in ("THANKS", "ACKNOWLEDGEMENT") or any(w in query for w in ("நன்றி", "சரி")):
+            return "மிக்க மகிழ்ச்சி! 😊 மேலும் ஏதேனும் தகவல் தேவைப்பட்டால் கேளுங்கள்."
+        return "மிக்க மகிழ்ச்சி! 😊 உங்களுக்கு உதவ எப்போதும் தயாராக உள்ளேன்."
 
     if lang == LanguageCode.SINHALA:
         if conv_type == "GREETING" or "ආයුබෝවන්" in query:
@@ -421,28 +420,25 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
                 "ආයුබෝවන්! මම GovGuide AI. මම ඔබට චිකාගෝ ව්‍යාපාරික බලපත්‍ර, අවශ්‍ය ලියකියවිලි, "
                 "ගාස්තු සහ අයදුම් කිරීමේ ක්‍රියාවලිය පිළිබඳව උපකාර කළ හැක."
             )
-        if conv_type == "THANKS" or "ස්තූතියි" in query:
-            return "ඔබව සාදරයෙන් පිළිගනිමි! තවත් තොරතුරු අවශ්‍ය නම් විමසන්න."
-        return "ඔබව සාදරයෙන් පිළිගනිමි!"
+        if conv_type in ("THANKS", "ACKNOWLEDGEMENT") or any(w in query for w in ("ස්තූතියි", "හරි")):
+            return "ඔබව සාදරයෙන් පිළිගනිමි! 😊 තවත් තොරතුරු අවශ්‍ය නම් විමසන්න."
+        return "ඔබව සාදරයෙන් පිළිගනිමි! 😊"
 
     # Standard English
     if conv_type == "GOODBYE" or any(w in q for w in ("bye", "goodbye", "farewell", "have a great day", "have a good day", "have a nice day")):
         return "You're welcome! Have a great day."
 
     if "thank you for your information" in q or "thanks for the information" in q or "thank you for the information" in q:
-        return "You're welcome! If you need any more information about the license or application process, feel free to ask."
+        return "You're welcome! 😊 If you need anything else about the service, feel free to ask."
 
     if any(w in q for w in ("you're welcome", "you are welcome", "your welcome", "happy to help", "no problem", "my pleasure")):
-        return "Happy to help! Feel free to ask if you have any questions."
+        return "Happy to help! 😊 Feel free to ask if you have any questions."
 
     if any(w in q for w in ("that's helpful", "that is helpful", "very helpful", "that's very helpful", "that is very helpful")):
-        return "I'm glad to help! Let me know if you have any more questions."
+        return "I'm glad to help! 😊 Let me know if you have any more questions."
 
-    if conv_type == "THANKS" or any(w in q for w in ("thank you", "thanks", "appreciate it", "much appreciated")):
-        return "You're welcome! Let me know if you need anything else."
-
-    if conv_type == "ACKNOWLEDGEMENT" or any(w in q for w in ("got it", "okay", "ok", "alright", "understood", "makes sense", "perfect", "sounds good")):
-        return "You're welcome! I'm happy to help."
+    if conv_type in ("THANKS", "ACKNOWLEDGEMENT") or any(w in q for w in ("thank you", "thanks", "ok", "okay", "got it", "alright", "great", "understood", "seri", "sari", "nandri", "bro", "appreciate it", "much appreciated")):
+        return "You're welcome! 😊 If you need anything else about the service, feel free to ask."
 
     if conv_type == "GREETING" or any(w in q for w in ("hi", "hello", "hey", "good morning", "good afternoon", "good evening", "howdy")):
         return (
@@ -451,7 +447,7 @@ def get_conversational_response(query: str, conv_type: Optional[str] = None) -> 
             "application procedures, required documentation, fees, or City department offices."
         )
 
-    return "You're welcome! Let me know if you need anything else."
+    return "You're welcome! 😊 If you need anything else about the service, feel free to ask."
 
 
 # ── Single & Multi-Intent Formatters ──────────────────────────────────────────
@@ -600,7 +596,7 @@ def _format_license_catalog_response(
                 first_sent = first_sent[:157].rstrip() + "..."
             short_desc = first_sent
         else:
-            short_desc = "Summary information is not available in the current knowledge base."
+            short_desc = "Summary unavailable in the current verified knowledge base."
 
         items_text.append(f"{i}. {name} — Code: {code}\n   Summary: {short_desc}")
 
