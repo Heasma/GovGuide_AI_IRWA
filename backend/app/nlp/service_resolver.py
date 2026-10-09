@@ -357,6 +357,12 @@ class ServiceResolver:
         if resolved_code:
             return False, None
 
+        # Ensure query is in-domain before classifying as unknown government service
+        from app.nlp.domain_detector import classify_domain, is_domain_supported
+        domain = classify_domain(query)
+        if not is_domain_supported(domain):
+            return False, None
+
         # Check for inquiry about a named entity: "tell me about <entity> (service|license)"
         patterns = [
             r"(?:tell\s+me\s+about|information\s+about|details\s+for|what\s+is|what\s+about|how\s+about)\s+(?:the\s+)?([a-z0-9_\-\s]{2,30}?)(?:\s+services|\s+service|\s+licenses|\s+license|\s+licence|\s+permit|\s+department)?$",

@@ -319,7 +319,7 @@ def get_insufficient_evidence_response(language: LanguageCode = LanguageCode.ENG
 
 
 def get_unsupported_domain_response(domain: Optional[str], language: LanguageCode = LanguageCode.ENGLISH) -> str:
-    """Returns safe guidance for out-of-scope domains (such as driver licenses or aviation)."""
+    """Returns safe guidance for out-of-scope domains (such as cricket, cooking, driver licenses, or aviation)."""
     domain_str = (domain or "").lower()
     is_driver = domain_str in ("driver_license", "driver license", "driver's license", "driving license")
     is_aviation = domain_str in ("aviation", "aviation_license", "helicopter", "pilot")
@@ -338,8 +338,9 @@ def get_unsupported_domain_response(domain: Optional[str], language: LanguageCod
                 "Please consult the Federal Aviation Administration (FAA https://www.faa.gov)."
             )
         return (
-            f"GovGuide AI knowledge base-la {domain_str.replace('_', ' ')} pathina information kidaikkala.\n\n"
-            "The available knowledge base currently focuses on City of Chicago government business licensing information."
+            "Mannikkavum, indha topic pathina information GovGuide AI system-la available illa. "
+            "Indha system government services, business licences, eligibility, documents, fees, "
+            "renewal, application procedure matrum related official information-ku mattum design seyyappattullathu."
         )
     elif language == LanguageCode.TAMIL:
         if is_driver:
@@ -349,8 +350,9 @@ def get_unsupported_domain_response(domain: Optional[str], language: LanguageCod
                 "அதிகாரப்பூர்வ DMV (https://www.ilsos.gov) தளத்தைப் பார்க்கவும்."
             )
         return (
-            "தற்போதைய GovGuide AI தரவுத்தளத்தில் இந்த சேவை பற்றிய தகவல்கள் இல்லை.\n\n"
-            "இது சிகாகோ வணிக உரிமங்களில் மட்டுமே கவனம் செலுத்துகிறது."
+            "மன்னிக்கவும், இந்த தலைப்பு குறித்த தகவல்கள் GovGuide AI அமைப்பில் கிடைக்கவில்லை. "
+            "இந்த அமைப்பு அரசு சேவைகள், வணிக உரிமங்கள், தகுதி, தேவையான ஆவணங்கள், விண்ணப்ப நடைமுறைகள், "
+            "கட்டணங்கள், புதுப்பித்தல் மற்றும் தொடர்புடைய அதிகாரப்பூர்வ தகவல்களுக்கு மட்டுமே வடிவமைக்கப்பட்டுள்ளது."
         )
     elif language == LanguageCode.SINHALA:
         if is_driver:
@@ -360,8 +362,9 @@ def get_unsupported_domain_response(domain: Optional[str], language: LanguageCod
                 "නිල DMV (https://www.ilsos.gov) පරීක්ෂා කරන්න."
             )
         return (
-            "GovGuide AI දැනුම් පදනමේ මෙම සේවාව පිළිබඳ තොරතුරු නොමැත.\n\n"
-            "මෙය චිකාගෝ ව්‍යාපාරික බලපත්‍ර සඳහා පමණක් සීමා වේ."
+            "සමාවන්න, මෙම මාතෘකාව පිළිබඳ තොරතුරු GovGuide AI පද්ධතියේ නොමැත. "
+            "මෙම පද්ධතිය රජයේ සේවාවන්, ව්‍යාපාර බලපත්‍ර, සුදුසුකම්, අවශ්‍ය ලියකියවිලි, "
+            "අයදුම් කිරීමේ ක්‍රියා පටිපාටි, ගාස්තු, අලුත් කිරීම් සහ අදාළ නිල තොරතුරු සඳහා පමණක් නිර්මාණය කර ඇත."
         )
 
     # Standard English default
@@ -377,11 +380,10 @@ def get_unsupported_domain_response(domain: Optional[str], language: LanguageCod
             "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
             "Please consult the Federal Aviation Administration (FAA at https://www.faa.gov) for official pilot and aircraft licensing requirements."
         )
-    domain_label = domain_str.replace("_", " ") if domain_str else "this service domain"
     return (
-        f"I couldn't find relevant information about {domain_label} in the current GovGuide AI knowledge base.\n\n"
-        "The available knowledge base currently focuses on City of Chicago government business licensing information.\n\n"
-        "Please consult the relevant official government authority directly for service and licensing requirements."
+        "Sorry, GovGuide AI does not provide information on this topic. "
+        "It is designed to assist with government services, business licences, eligibility, "
+        "required documents, application procedures, fees, renewal, and related official information."
     )
 
 

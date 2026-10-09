@@ -57,6 +57,7 @@ class Intent(str, Enum):
     COMPARISON = "comparison"
     SOURCE_EVIDENCE = "source_evidence"
     LICENSE_CATALOG = "license_catalog"
+    ALL_LICENSES = "all_licenses"
     CONVERSATIONAL = "conversational"
     GREETING = "greeting"
     THANKS = "thanks"

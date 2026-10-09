@@ -81,7 +81,10 @@ class RetrievalAgent:
         # If domain was not classified upstream, perform inline classification
         if detected_domain in (Domain.UNKNOWN, None) and search_query:
             detected_domain = classify_domain(search_query)
-            is_domain_supported = detected_domain in SUPPORTED_DOMAINS
+            if detected_domain in UNSUPPORTED_DOMAINS and detected_domain != Domain.UNKNOWN:
+                is_domain_supported = False
+            elif detected_domain in SUPPORTED_DOMAINS:
+                is_domain_supported = True
 
         retrieval_config = payload.get("retrieval_config", {})
         top_k = retrieval_config.get("top_k", 10)
@@ -97,8 +100,8 @@ class RetrievalAgent:
 
         # ── Domain Gating: Prevent Cross-Domain Retrieval ────────────────────
         is_unsupported = (
-            detected_domain in UNSUPPORTED_DOMAINS
-            or (not is_domain_supported and detected_domain not in (Domain.UNKNOWN, Domain.BUSINESS_LICENSE, Domain.GOVERNMENT_SERVICE))
+            not is_domain_supported
+            or (detected_domain in UNSUPPORTED_DOMAINS and detected_domain != Domain.UNKNOWN)
         )
 
         if is_unsupported:

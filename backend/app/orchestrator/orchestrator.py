@@ -118,63 +118,13 @@ class Orchestrator:
             knowledge_base_domain_supported=structured_query.is_domain_supported,
         )
 
-        # ── Step 2a: Unknown Service Fast-path ───────────────────────────────
-        if structured_query.search_parameters.get("is_unknown_service", False):
-            unknown_name = structured_query.search_parameters.get("unknown_service_name") or "the requested service"
-            unknown_answer = f"I couldn't find a matching verified government service for '{unknown_name}' in the current knowledge base. Please provide the service name or license code."
-            log.info("unknown_service_response_dispatched", unknown_service_name=unknown_name)
-            return QueryResponse(
-                request_id=request_id,
-                answer=unknown_answer,
-                confidence_score=0.0,
-                confidence_label=ConfidenceLabel.INSUFFICIENT,
-                sources=[],
-                caveats=["Unknown government service requested."],
-                explanation=f"No matching canonical GovernmentService record found for '{unknown_name}'.",
-                is_demo=False,
-                is_conversational=False,
-            )
-
-        # ── Step 2b: Ambiguous Query Clarification Fast-path ───────────────────
-        if structured_query.search_parameters.get("needs_clarification", False):
-            detected_lang = structured_query.search_parameters.get("detected_language", "en")
-            clar_type = structured_query.search_parameters.get("clarification_type")
-            clarification_answer = get_clarification_response(detected_lang, clarification_type=clar_type)
-            log.info(
-                "ambiguous_clarification_dispatched",
-                detected_language=detected_lang,
-                clarification_type=clar_type,
-            )
-            return QueryResponse(
-                request_id=request_id,
-                answer=clarification_answer,
-                confidence_score=0.5,
-                confidence_label=ConfidenceLabel.MEDIUM,
-                sources=[],
-                caveats=["Query is ambiguous. Clarification requested."],
-                explanation="The query requests a license or service without specifying the business type or specific service required.",
-                is_demo=False,
-                is_conversational=False,
-            )
-
-        # ── Step 2c: Conversational / Non-informational Fast-path ─────────────
-        has_substantive_intent = structured_query.intent in (
-            Intent.SERVICE_LOOKUP, Intent.SERVICE_INFORMATION, Intent.LICENSE_IDENTIFICATION,
-            Intent.ELIGIBILITY, Intent.GEOGRAPHIC_ELIGIBILITY, Intent.PROCEDURE,
-            Intent.APPLICATION_PROCEDURE, Intent.REQUIRED_DOCUMENTS, Intent.FEES,
-            Intent.RENEWAL, Intent.OFFICE_INFORMATION, Intent.COMPARISON, Intent.SOURCE_EVIDENCE,
-            Intent.LICENSE_CATALOG,
-        )
-
+        # ── Step 2a: Conversational / Non-informational Fast-path ─────────────
         is_conversational_intent = (
-            not has_substantive_intent
-            and (
-                structured_query.intent in (
-                    Intent.CONVERSATIONAL, Intent.THANKS, Intent.ACKNOWLEDGEMENT,
-                    Intent.GOODBYE, Intent.GREETING,
-                )
-                or not structured_query.search_parameters.get("retrieval_required", True)
+            structured_query.intent in (
+                Intent.CONVERSATIONAL, Intent.THANKS, Intent.ACKNOWLEDGEMENT,
+                Intent.GOODBYE, Intent.GREETING,
             )
+            or structured_query.search_parameters.get("conversation_type") is not None
         )
 
         if is_conversational_intent:
@@ -196,6 +146,69 @@ class Orchestrator:
                 explanation=None,
                 is_demo=False,
                 is_conversational=True,
+            )
+
+        # ── Step 2b: Strict Out-of-Domain Refusal Fast-path ───────────────────
+        if not structured_query.is_domain_supported:
+            from app.nlp.language_detector import resolve_query_language
+            from app.agents.advisory_agent.intent_formatter import get_unsupported_domain_response
+            resolved_lang = resolve_query_language(query)
+            domain_val_str = structured_query.domain.value if hasattr(structured_query.domain, "value") else str(structured_query.domain)
+            out_of_domain_answer = get_unsupported_domain_response(domain_val_str, resolved_lang)
+            log.info(
+                "out_of_domain_response_dispatched",
+                detected_domain=domain_val_str,
+                language=str(resolved_lang),
+            )
+            return QueryResponse(
+                request_id=request_id,
+                answer=out_of_domain_answer,
+                confidence_score=0.0,
+                confidence_label=ConfidenceLabel.INSUFFICIENT,
+                sources=[],
+                caveats=["Topic outside GovGuide AI government service and business licensing domain."],
+                explanation=f"Query belongs to unsupported domain '{domain_val_str}'. Cross-domain retrieval was prevented.",
+                is_demo=False,
+                is_conversational=False,
+            )
+
+        # ── Step 2c: Unknown Service Fast-path ───────────────────────────────
+        if structured_query.search_parameters.get("is_unknown_service", False):
+            unknown_name = structured_query.search_parameters.get("unknown_service_name") or "the requested service"
+            unknown_answer = f"I couldn't find a matching verified government service for '{unknown_name}' in the current knowledge base. Please provide the service name or license code."
+            log.info("unknown_service_response_dispatched", unknown_service_name=unknown_name)
+            return QueryResponse(
+                request_id=request_id,
+                answer=unknown_answer,
+                confidence_score=0.0,
+                confidence_label=ConfidenceLabel.INSUFFICIENT,
+                sources=[],
+                caveats=["Unknown government service requested."],
+                explanation=f"No matching canonical GovernmentService record found for '{unknown_name}'.",
+                is_demo=False,
+                is_conversational=False,
+            )
+
+        # ── Step 2d: Ambiguous Query Clarification Fast-path ───────────────────
+        if structured_query.search_parameters.get("needs_clarification", False):
+            detected_lang = structured_query.search_parameters.get("detected_language", "en")
+            clar_type = structured_query.search_parameters.get("clarification_type")
+            clarification_answer = get_clarification_response(detected_lang, clarification_type=clar_type)
+            log.info(
+                "ambiguous_clarification_dispatched",
+                detected_language=detected_lang,
+                clarification_type=clar_type,
+            )
+            return QueryResponse(
+                request_id=request_id,
+                answer=clarification_answer,
+                confidence_score=0.5,
+                confidence_label=ConfidenceLabel.MEDIUM,
+                sources=[],
+                caveats=["Query is ambiguous. Clarification requested."],
+                explanation="The query requests a license or service without specifying the business type or specific service required.",
+                is_demo=False,
+                is_conversational=False,
             )
 
         # ── Step 3: Agent 2 — Retrieval Agent ─────────────────────────────────

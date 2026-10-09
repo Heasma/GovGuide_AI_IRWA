@@ -46,8 +46,8 @@ _THANGLISH_MARKERS: Set[str] = {
     "ennaku", "enakku", "enaku", "ungalluku", "ungalukku", "ungalku",
     "namma", "namakku", "unaku", "enakum", "ungallukum", "naan", "neenga",
     # Question words
-    "epdi", "eppadi", "yapadi", "ebdi", "yeppidi",
-    "enna", "ena", "yennadhu", "ennathu", "yena",
+    "epdi", "eppadi", "eppidi", "yapadi", "ebdi", "yeppidi", "yepadi",
+    "enna", "ena", "yennadhu", "ennathu", "yena", "edhu", "yethu",
     "enga", "engae", "enge", "yenga", "engey",
     "evvalavu", "evlo", "evalavu", "ethana", "ethanai",
     "eppo", "yeppo", "eppodhu", "yeppodhu",
@@ -55,14 +55,14 @@ _THANGLISH_MARKERS: Set[str] = {
     "edhuku", "ethuku", "yen", "yethukku",
     # Verbs & Verbal Participles
     "edukka", "edukkaradhu", "edukkuradhu", "eduka", "edukurathu", "edukanum",
-    "vaanga", "vaanguradhu", "vanga", "peruvathu", "vanganum",
+    "vaanga", "vaanguradhu", "vanga", "peruvathu", "vanganum", "vangalaam", "vangalam",
     "venum", "vendum", "theva", "thevai", "thevapadum",
     "poganum", "ponum", "sella", "poga",
-    "panna", "pannuradhu", "panradhu", "panrathu", "pannungalen", "pannanum", "pananum", "pannalaam",
+    "panna", "pannuradhu", "panradhu", "panrathu", "pannungalen", "pannanum", "pananum", "pannalaam", "pannuva", "pannuvanga",
     "mudiyuma", "mudiyum", "panlam", "mudiyadhu",
     "kudunga", "kudu", "sollunga", "sollu", "sollala", "sollalaam", "thaanga", "thanga",
     "kattanam", "katnam", "panam", "kaasu",
-    "paththi", "patri", "patthi", "thodarpa",
+    "paththi", "patri", "patthi", "thodarpa", "pathi", "pathina",
     "thirumba", "marupadiyum", "puthupikka", "puthusa",
     "thozhil", "thozil", "vyaparam", "viyabaram",
     "urimam", "urimangal",
@@ -71,6 +71,10 @@ _THANGLISH_MARKERS: Set[str] = {
     "illai", "illa", "irukku", "iruka", "irukkiradhu", "theriyuma", "theriyala",
     "kedaikkuma", "kedaikum", "kidaikkala", "kidaikuma", "valangapadum",
     "madhiri", "mari", "mathiri", "sonna",
+    # General & Activities
+    "villadurathu", "vilayaduvathu", "vilayadurathu", "vilayattu", "aatam",
+    "samaikiradhu", "samaikirathu", "samaikkanum", "samayal",
+    "nalladhu", "nallathu", "kadhai", "padam",
 }
 
 # Common Singlish vocabulary & morphological markers (Latin script Sinhala)

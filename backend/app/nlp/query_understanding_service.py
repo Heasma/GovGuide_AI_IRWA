@@ -265,7 +265,27 @@ class QueryUnderstandingService:
             resolved_code, resolved_name, resolve_score = resolver.resolve(normalized_query)
             if not resolved_code:
                 resolved_code, resolved_name, resolve_score = resolver.resolve(raw_query)
-            if not resolved_code and context_entity:
+
+        domain = classify_domain(normalized_query)
+        if domain not in SUPPORTED_DOMAINS:
+            domain = classify_domain(raw_query)
+        from app.nlp.activity_extractor import BusinessActivityType
+        if resolved_code or business_activity.activity_type not in (BusinessActivityType.NONE, BusinessActivityType.GENERIC_BUSINESS):
+            domain = Domain.BUSINESS_LICENSE
+        is_supported = domain in SUPPORTED_DOMAINS
+
+        if not is_conversational and is_supported:
+            # Check if query is a valid follow-up that should inherit context_entity
+            from app.nlp.entity_extractor import _PRONOUN_PATTERN
+            is_valid_followup = bool(_PRONOUN_PATTERN.search(normalized_query)) or any(
+                it in (
+                    Intent.FEES, Intent.REQUIRED_DOCUMENTS, Intent.OFFICE_INFORMATION,
+                    Intent.PROCEDURE, Intent.APPLICATION_PROCEDURE, Intent.RENEWAL,
+                    Intent.ELIGIBILITY, Intent.GEOGRAPHIC_ELIGIBILITY, Intent.SOURCE_EVIDENCE,
+                ) for it in intents
+            )
+
+            if not resolved_code and context_entity and is_valid_followup:
                 resolved_code, resolved_name, resolve_score = resolver.resolve(context_entity)
 
             is_unknown_svc, unknown_svc_name = resolver.detect_unknown_service(normalized_query)
@@ -274,16 +294,16 @@ class QueryUnderstandingService:
 
             is_generic_svc = resolver.is_generic_service_query(normalized_query) or resolver.is_generic_service_query(raw_query)
 
-        domain = classify_domain(normalized_query)
-        is_supported = domain in SUPPORTED_DOMAINS
-
         if resolved_code:
             domain = Domain.BUSINESS_LICENSE
             is_supported = True
 
+        if not is_supported and not is_conversational:
+            retrieval_required = False
+
         # ── Step 8: Named Entity Recognition & Context Resolution ─────────────
         resolved_entity, entity_source, context_switched = resolve_query_entity(
-            normalized_query, context_entity
+            normalized_query, context_entity if is_supported else None
         )
 
         extracted_raw = extract_entities(normalized_query)
@@ -296,9 +316,9 @@ class QueryUnderstandingService:
                 end_char=e.end_char,
             )
             for e in extracted_raw
-        ]
+        ] if is_supported else []
 
-        if resolved_code and resolved_name:
+        if is_supported and resolved_code and resolved_name:
             resolved_entity = resolved_name
             entity_source = "canonical_resolver"
             # Ensure entity list has the canonical service and code
@@ -323,7 +343,7 @@ class QueryUnderstandingService:
 
         has_service_or_code = any(e.label in ("SERVICE", "LICENSE_CODE") for e in entities) or bool(resolved_code)
 
-        if not is_conversational:
+        if not is_conversational and is_supported:
             if resolved_entity and not has_service_or_code:
                 entities.append(
                     EntityExtraction(
@@ -339,10 +359,10 @@ class QueryUnderstandingService:
                 is_supported = True
 
         # ── Step 9: Domain Query Expansion for Retrieval ──────────────────────
-        expanded_query_str = expand_query(normalized_query)
-        if resolved_entity and not is_conversational and resolved_entity not in expanded_query_str:
+        expanded_query_str = expand_query(normalized_query) if is_supported else normalized_query
+        if is_supported and resolved_entity and not is_conversational and resolved_entity not in expanded_query_str:
             expanded_query_str = f"{resolved_entity} {expanded_query_str}"
-        if resolved_code and resolved_code not in expanded_query_str:
+        if is_supported and resolved_code and resolved_code not in expanded_query_str:
             expanded_query_str = f"{resolved_code} {expanded_query_str}"
 
         tokens = tokenize_query(normalized_query, remove_stopwords=True)
@@ -385,6 +405,7 @@ class QueryUnderstandingService:
 
         if not is_supported:
             needs_clarification = False
+            retrieval_required = False
 
         elif is_unknown_svc and not resolved_code:
             retrieval_required = False
@@ -403,27 +424,40 @@ class QueryUnderstandingService:
                     clarification_type = "missing_context"
                 retrieval_required = False
 
-        elif not is_conversational and not has_specific_service and not context_entity and not has_action_intent:
-            # 1. Tailoring inquiry
-            if business_activity.activity_type == BusinessActivityType.SERVICE_TAILORING:
-                needs_clarification = True
-                clarification_type = "tailoring_setup"
-                retrieval_required = False
-
-            # 2. Generic Retail with unspecified goods
-            elif business_activity.activity_type == BusinessActivityType.GENERIC_RETAIL:
-                needs_clarification = True
-                clarification_type = "retail_goods"
-                retrieval_required = False
-
-            # 3. Generic Business / Ambiguous License request / Vague license inquiry
+        elif is_supported and not is_conversational and not has_specific_service and not context_entity:
+            is_catalog_or_office = intent in (Intent.LICENSE_CATALOG, Intent.OFFICE_INFORMATION) or any(
+                it in (Intent.LICENSE_CATALOG, Intent.OFFICE_INFORMATION) for it in intents
+            )
+            if is_catalog_or_office:
+                needs_clarification = False
             else:
-                needs_clarification = True
-                clarification_type = "business_type"
-                retrieval_required = False
+                is_licensing_inquiry = any(k in normalized_query.lower() for k in ("license", "licence", "permit", "business", "shop", "store", "start", "open", "fee", "apply", "venum", "theva", "edukka", "vanganum", "get")) or business_activity.activity_type not in (BusinessActivityType.NONE, BusinessActivityType.GENERIC_BUSINESS)
+                if is_licensing_inquiry:
+                    # 1. Tailoring inquiry
+                    if business_activity.activity_type == BusinessActivityType.SERVICE_TAILORING:
+                        needs_clarification = True
+                        clarification_type = "tailoring_setup"
+                        retrieval_required = False
+
+                    # 2. Generic Retail with unspecified goods
+                    elif business_activity.activity_type == BusinessActivityType.GENERIC_RETAIL:
+                        needs_clarification = True
+                        clarification_type = "retail_goods"
+                        retrieval_required = False
+
+                    # 3. Generic Business / Ambiguous License request / Vague license inquiry
+                    else:
+                        needs_clarification = True
+                        clarification_type = "business_type"
+                        retrieval_required = False
+                elif has_action_intent:
+                    needs_clarification = False
+                else:
+                    needs_clarification = False
+                    retrieval_required = False
 
         is_ambiguous = needs_clarification or (
-            len(tokens) <= 1 and intent == Intent.GENERAL and not entities and not is_conversational and is_supported
+            len(tokens) <= 1 and intent == Intent.GENERAL and not entities and not is_conversational
         )
 
         target_services_list = []

@@ -321,9 +321,19 @@ def resolve_query_entity(
     if unknown_token_match and unknown_token_match.group(1) not in ("1006", "1010", "1011", "1004", "1005", "1002", "1470", "1781", "4405", "800", "121", "60602", "744", "6060", "2", "1", "3", "4", "5"):
         return unknown_token_match.group(1), "unrecognized_token", True
 
+    # Check if the query is an out-of-domain / unrelated question
+    from app.nlp.domain_detector import classify_domain, is_domain_supported
+    from app.nlp.intent_classifier import is_conversational_query
+    query_domain = classify_domain(current_query)
+    has_pronoun = bool(_PRONOUN_PATTERN.search(current_query))
+    is_conv = is_conversational_query(current_query)
+
+    if not is_domain_supported(query_domain) and not has_pronoun and not is_conv:
+        # Out of domain query: do not reuse previous context entity
+        return None, "none", True
+
     # Priority 4 & 5: Check if previous context exists for genuine follow-ups
     if context_entity:
-        has_pronoun = bool(_PRONOUN_PATTERN.search(current_query))
         source = "pronoun_resolution" if has_pronoun else "conversation_context"
         return context_entity, source, False
 

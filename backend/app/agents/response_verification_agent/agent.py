@@ -105,8 +105,8 @@ class ResponseVerificationAgent:
         domain_str = domain_val.value if hasattr(domain_val, "value") else str(domain_val) if domain_val else ""
 
         is_explicit_unsupported = (
-            (domain_str and domain_str in [d.value for d in UNSUPPORTED_DOMAINS])
-            or (not is_domain_supported and domain_str not in ("", "unknown", "business_license", "government_service"))
+            not is_domain_supported
+            or (domain_str and domain_str in ("driver_license", "vehicle_registration", "tax", "health", "education", "aviation", "other"))
         )
 
         if is_explicit_unsupported:
@@ -115,8 +115,11 @@ class ResponseVerificationAgent:
                 request_id=message.request_id,
                 domain=domain_str,
             )
-            safe_msg = get_unsupported_domain_response(domain_str)
-            domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.UNKNOWN
+            from app.nlp.language_detector import resolve_query_language
+            from app.agents.advisory_agent.intent_formatter import get_unsupported_domain_response as get_formatted_unsupported
+            resolved_lang = resolve_query_language(user_query)
+            safe_msg = get_formatted_unsupported(domain_str, resolved_lang)
+            domain_enum = Domain(domain_str) if domain_str in Domain._value2member_map_ else Domain.OTHER
             result = ResponseResultPayload(
                 answer=safe_msg,
                 confidence_score=0.0,
@@ -125,7 +128,7 @@ class ResponseVerificationAgent:
                 is_domain_supported=False,
                 sources=[],
                 caveats=[
-                    "The requested domain is not supported by the current City of Chicago business licensing dataset."
+                    "The requested topic is outside the GovGuide AI government service and business licensing domain."
                 ],
                 explanation=f"Query belongs to unsupported domain '{domain_str}'. Cross-domain retrieval was prevented.",
                 response_validated=True,
